@@ -1,0 +1,99 @@
+{
+    "$schema": "https://developer.joomla.org/schemas/json-schema/web_assets.json",
+    "name": "com_cotton",
+    "version": "2.0.0",
+    "description": "Web assets for the Cotton component",
+    "license": "AGPL-3.0",
+    "assets": [
+      {
+        "name": "com_cotton.cotton_admin",
+        "type": "script",
+        "uri": "com_cotton/cotton_admin.js",
+        "attributes": {
+          "defer": true
+        },
+        "dependencies": [
+          "core"
+        ],
+        "version": "2.0.0"
+      },
+      {
+        "name": "com_cotton.cotton_helper",
+        "type": "script",
+        "uri": "com_cotton/CottonHelper.js",
+        "attributes": {
+          "type": "module",
+          "defer": true
+        },
+        "version": "2.0.0"
+      },
+      {
+        "name": "com_cotton.cotton_init",
+        "type": "script",
+        "uri": "com_cotton/cotton_init.js",
+        "attributes": {
+          "type": "module",
+          "defer": true
+        },
+        "version": "2.0.0"
+      },
+      {
+        "name": "com_cotton.cotton_uimanager",
+        "type": "script",
+        "uri": "com_cotton/CottonUIManager.js",
+        "attributes": {
+          "type": "module",
+          "defer": true
+        },
+        "version": "2.0.0"
+      },
+      {
+        "name": "com_cotton.cotton_uxmanager",
+        "type": "script",
+        "uri": "com_cotton/CottonUXManager.js",
+        "attributes": {
+          "type": "module",
+          "defer": true
+        },
+        "version": "2.0.0"
+      },
+      {
+        "name": "com_cotton.cotton",
+        "type": "style",
+        "uri": "com_cotton/cotton.css",
+        "version": "2.0.0"
+      },
+      {
+        "name": "com_cotton.cotton_light",
+        "type": "style",
+        "uri": "com_cotton/cotton_light.css",
+        "version": "2.0.0"
+      },
+      {
+        "name": "com_cotton.cotton_modal",
+        "type": "script",
+        "uri": "com_cotton/CottonModal.js",
+        "attributes": {
+          "type": "module",
+          "defer": true
+        },
+        "version": "2.0.0"
+      },
+      {
+        "name": "com_cotton.cotton_media_handler",
+        "type": "script",
+        "uri": "com_cotton/CottonMediaHandler.js",
+        "attributes": {
+          "type": "module",
+          "defer": true
+        },
+        "version": "2.0.0"
+      },
+      {
+        "name": "com_cotton.cotton_dark",
+        "type": "style",
+        "uri": "com_cotton/cotton_dark.css",
+        "version": "2.0.0"
+      }
+      ]
+  }

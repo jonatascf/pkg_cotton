@@ -1,0 +1,91 @@
+/**
+ * @package Tabaoca.Module.Cotton.Site
+ * @subpackage mod_cotton
+ * @copyright (C) 2026 Jonatas C. Ferreira
+ * @license GNU/AGPL v3 https://www.gnu.org/licenses/agpl-3.0.html
+ */
+
+/* O Painel de Fundo do Dock */
+.cotton-dock-container {
+    display: flex;
+    justify-content: center;
+    align-items: flex-end; /* Garante o alinhamento pela base */
+    gap: 15px;
+    background: rgba(240, 240, 240, 0.4);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    padding: 12px 20px;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    width: max-content;
+    margin: 20px auto;
+    height: 75px;
+}
+
+/* O Item/Link que envelopa o ícone */
+.cotton-dock-item {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+/* O Ícone PNG Quadrado */
+.cotton-dock-icon {
+    width: 48px;
+    height: 48px;
+    object-fit: cover;
+    border-radius: 12px; /* Cantos arredondados estilo iOS */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    transform-origin: bottom center; /* Cresce a partir de baixo */
+    transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* ==========================================
+   A ONDA DO DOCK (Mágica do CSS Moderno)
+   ========================================== */
+
+/* 1. ÍCONE SELECIONADO: Ganha o maior aumento (Escala 1.45) */
+.cotton-dock-item:hover .cotton-dock-icon {
+    transform: scale(1.45);
+}
+
+/* 2. VIZINHO DA DIREITA: Aumenta um pouco (Escala 1.2) */
+.cotton-dock-item:hover + .cotton-dock-item .cotton-dock-icon {
+    transform: scale(1.2);
+}
+
+/* 3. VIZINHO DA ESQUERDA: Aumenta um pouco usando :has() (Escala 1.2) */
+.cotton-dock-container:has(.cotton-dock-item:nth-child(2):hover) .cotton-dock-item:nth-child(1) .cotton-dock-icon,
+.cotton-dock-container:has(.cotton-dock-item:nth-child(3):hover) .cotton-dock-item:nth-child(2) .cotton-dock-icon {
+    transform: scale(1.2);
+}
+
+
+/* ==========================================
+   A ETIQUETA COM NOME DO COMPONENTE (Tooltip)
+   ========================================== */
+.cotton-dock-label {
+    position: absolute;
+    top: -35px; /* Fica flutuando acima do ícone */
+    background: rgba(33, 37, 41, 0.85);
+    color: #fff;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 500;
+    border-radius: 8px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    transform: translateY(5px);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+/* Mostra a etiqueta apenas no hover do elemento */
+.cotton-dock-item:hover .cotton-dock-label {
+    opacity: 1;
+    transform: translateY(0);
+}

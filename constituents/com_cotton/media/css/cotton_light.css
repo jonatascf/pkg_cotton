@@ -1,0 +1,21 @@
+/**
+ * @package Tabaoca.Component.Cotton.Site
+ * @subpackage com_cotton
+ * @copyright (C) 2024 Jonatas C. Ferreira
+ * @license GNU/AGPL v3 https://www.gnu.org/licenses/agpl-3.0.html
+ */
+
+:root {
+	--cot-blue: #5091CD;
+	--cot-green: #7ac143;
+	--cot-red: #F44321;
+	--cot-orange: #F9A541;
+	--cot-purple: #7455a5;
+	--cot-gray1: #FFFFFF;
+	--cot-gray2: #F0F1F5;
+	--cot-gray3: #E0E4EB;
+	--cot-gray4: #D1D6E0;
+	--cot-gray5: #BFC6D4;
+	--cot-font1: #000000;
+    --cot-font2: #37404F;
+}

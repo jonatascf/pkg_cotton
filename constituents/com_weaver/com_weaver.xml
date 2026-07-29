@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<extension type="component" method="upgrade">
+
+	<name>COM_WEAVER</name>
+	<author>Jonatas C. Ferreira</author>
+	<creationDate>April 2026</creationDate>
+	<authorEmail>jonatas@tabaoca.org</authorEmail>
+	<authorUrl>https://tabaoca.org</authorUrl>
+	<copyright>Copyright (C) 2026 Jonatas C. Ferreira. All rights reserved.</copyright>
+	<license>GNU/AGPL v3 https://www.gnu.org/licenses/agpl-3.0.html</license>
+	<version>2.0.0</version>
+	<description>COM_WEAVER_DESCRIPTION</description>
+	<element>com_weaver</element>
+
+	<namespace path="src">Tabaoca\Component\Weaver</namespace>
+
+	<files folder="site">
+		<folder>src</folder>
+		<folder>tmpl</folder>
+	</files>
+
+	<languages folder="site/language">
+		<language tag="en-GB">en-GB/en-GB.com_weaver.ini</language>
+		<language tag="pt-BR">pt-BR/pt-BR.com_weaver.ini</language>
+	</languages>
+
+	<media folder="media" destination="com_weaver">
+ 		<folder>js</folder>
+		<folder>css</folder>
+		<filename>joomla.asset.json</filename>
+	</media>
+
+	<administration>
+
+		<menu link="option=com_weaver&amp;view=weaver" img="class:comments-2">COM_WEAVER</menu>
+
+		<files folder="admin">
+			<file>access.xml</file>
+			<file>config.xml</file>
+			<folder>services</folder>
+			<folder>src</folder>
+			<folder>tmpl</folder>
+		</files>
+
+		<languages folder="admin/language">
+			<language tag="en-GB">en-GB/en-GB.com_weaver.ini</language>
+			<language tag="en-GB">en-GB/en-GB.com_weaver.sys.ini</language>
+			<language tag="pt-BR">pt-BR/pt-BR.com_weaver.ini</language>
+			<language tag="pt-BR">pt-BR/pt-BR.com_weaver.sys.ini</language>
+		</languages>
+
+	</administration>
+
+</extension>

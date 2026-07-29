@@ -1,0 +1,81 @@
+<?php
+/**
+ * @package Tabaoca.Component.Weaver.Administrator
+ * @subpackage com_weaver
+ * @copyright (C) 2026 Jonatas C. Ferreira
+ * @license GNU/AGPL v3 https://www.gnu.org/licenses/agpl-3.0.html
+ */
+
+namespace Tabaoca\Component\Weaver\Administrator\Controller;
+
+\defined('_JEXEC') or die;
+
+require_once JPATH_COMPONENT_ADMINISTRATOR . '/vendor/autoload.php';
+
+use Joomla\CMS\MVC\Controller\BaseController;
+use Joomla\CMS\Factory;
+use Joomla\CMS\Session\Session;
+use Joomla\CMS\Response\JsonResponse;
+use Joomla\CMS\Language\Text;
+use Joomla\CMS\Uri\Uri;
+use Joomla\CMS\Component\ComponentHelper;
+
+use Ratchet\MessageComponentInterface;
+use Ratchet\ConnectionInterface;
+use React\EventLoop\Factory as LoopFactory;
+use React\Socket\SocketServer;
+use React\Socket\SecureServer;
+use Ratchet\Server\IoServer;
+use Ratchet\WebSocket\WsServer;
+use Ratchet\Http\HttpServer;
+use Ratchet\RFC6455\Messaging\Frame;
+
+/**
+ * Controller of Weaver Editor administrator component
+ *
+ * @package     Tabaoca.Component.Weaver.Administrator
+ * @subpackage  com_weaver
+ * @since       2.0.0
+ */
+class WeaverController extends BaseController {
+
+	/**
+	* Method to start the loop to refresh data in Dashboard View.
+	* 
+	* @return  object  Response JSON encoded object to XHR call.
+	* @since   2.0.0
+	*/
+	public function run () {
+
+		try {
+
+			if (!Session::checkToken()) {
+
+				echo new JsonResponse(null, Text::_('JINVALID_TOKEN'), true);
+
+			} else {
+
+				$input = Factory::getApplication()->input;
+
+				$n_folders = $input->get('n_folders', 0, 'INT');
+				$n_files = $input->get('n_files', 0, 'INT');
+				$n_size = $input->get('n_size', 0, 'INT');
+
+				$model = $this->getModel();
+
+				$record = $model->run($n_folders, $n_files, $n_size);
+
+				echo new JsonResponse($record);
+
+			}
+
+		} catch (\Exception $e) {
+
+			echo new JsonResponse($e);
+
+		}
+
+	}
+
+
+}

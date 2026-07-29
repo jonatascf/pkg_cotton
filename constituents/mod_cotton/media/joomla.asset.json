@@ -1,0 +1,28 @@
+{
+  "$schema": "https://developer.joomla.org/schemas/json-schema/web_assets.json",
+  "name": "mod_cotton",
+  "version": "2.0.0",
+  "description": "Web assets for the Cotton Cloud module",
+  "license": "AGPL-3.0",
+  "assets": [
+    {
+      "name": "mod_cotton.cotton_mod",
+      "type": "script",
+      "uri": "mod_cotton/mod_cotton.js",
+      "attributes": {
+        "type": "module",
+        "defer": true
+      },
+        "dependencies": [
+        "core"
+      ],
+      "version": "2.0.0"
+    },
+    {
+      "name": "mod_cotton.cotton_mod",
+      "type": "style",
+      "uri": "mod_cotton/mod_cotton.css",
+      "version": "2.0.0"
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "$schema": "https://developer.joomla.org/schemas/json-schema/web_assets.json",
+  "name": "com_shuttle",
+  "version": "2.0.0",
+  "description": "Web assets for the Shuttle Terminal component",
+  "license": "AGPL-3.0",
+  "assets": [
+    {
+      "name": "com_shuttle.shuttle_app",
+      "type": "script",
+      "uri": "com_shuttle/ShuttleApp.js",
+      "attributes": {
+        "type": "module",
+        "defer": true
+      },
+      "version": "2.0.0"
+    }
+  ]
+}

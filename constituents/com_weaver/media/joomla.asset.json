@@ -1,0 +1,94 @@
+{
+  "$schema": "https://developer.joomla.org/schemas/json-schema/web_assets.json",
+  "name": "com_weaver",
+  "version": "2.0.0",
+  "description": "Web assets for the Weaver text editor component",
+  "license": "AGPL-3.0",
+  "assets": [
+    {
+      "name": "com_cotton.cotton_tabs",
+      "type": "script",
+      "uri": "com_cotton/CottonTabs.js",
+      "attributes": {
+        "type": "module",
+        "defer": true
+      },
+      "version": "2.0.0"
+    },
+    {
+      "name": "com_cotton.cotton_helper",
+      "type": "script",
+      "uri": "com_cotton/CottonHelper.js",
+      "attributes": {
+        "type": "module",
+        "defer": true
+      },
+      "version": "2.0.0"
+    },
+    {
+      "name": "com_weaver.weaver_app",
+      "type": "script",
+      "uri": "com_weaver/WeaverApp.js",
+      "attributes": {
+        "type": "module",
+        "defer": true
+      },
+      "dependencies": [
+        "com_cotton.cotton_tabs",
+        "com_cotton.cotton_helper",
+        "com_cotton.cotton_uimanager",
+        "webcomponent.editor-codemirror"
+      ],
+      "version": "2.0.0"
+    },
+    {
+      "name": "com_weaver.mcp_client",
+      "type": "script",
+      "uri": "com_weaver/WeaverMCPClient.js",
+      "attributes": {
+        "type": "module",
+        "defer": true
+      },
+      "dependencies": [
+        "com_weaver.weaver_app"
+      ],
+      "version": "2.0.0"
+    },
+    {
+      "name": "com_weaver.kilo_assistant",
+      "type": "script",
+      "uri": "com_weaver/WeaverKiloAssistant.js",
+      "attributes": {
+        "type": "module",
+        "defer": true
+      },
+      "dependencies": [
+        "com_weaver.mcp_client"
+      ],
+      "version": "2.0.0"
+    },
+    {
+      "name": "com_weaver.mcp_panel",
+      "type": "script",
+      "uri": "com_weaver/WeaverMCPPanel.js",
+      "attributes": {
+        "type": "module",
+        "defer": true
+      },
+      "dependencies": [
+        "com_weaver.mcp_client",
+        "com_weaver.kilo_assistant"
+      ],
+      "version": "2.0.0"
+    },
+    {
+      "name": "com_weaver.weaver",
+      "type": "style",
+      "uri": "com_weaver/weaver.css",
+      "dependencies": [
+        "com_cotton.cotton"
+      ],
+      "version": "2.0.0"
+    }
+  ]
+}

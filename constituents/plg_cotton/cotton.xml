@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<extension type="plugin" group="editors-xtd" method="upgrade">
+	
+	<name>PLG_EDITORS_XTD_COTTON</name>
+	<author>Jonatas C. Ferreira</author>
+	<creationDate>April 2026</creationDate>
+	<authorEmail>jonatas@tabaoca.org</authorEmail>
+	<authorUrl>https://tabaoca.org</authorUrl>
+	<copyright>Copyright (C) 2026 Jonatas C. Ferreira. All rights reserved.</copyright>
+	<license>GNU/AGPL v3 https://www.gnu.org/licenses/agpl-3.0.html</license>
+	<version>2.0.0</version>
+	<description>PLG_EDITORS_XTD_COTTON_DESCRIPTION</description>
+	<element>plg_editors-xtd_cotton</element>
+	<namespace path="src">Tabaoca\Plugin\EditorsXtd\Cotton</namespace>
+	
+	<files>
+		<folder plugin="cotton">services</folder>
+		<folder>src</folder>
+		<folder>media</folder>
+		<folder>language</folder>
+	</files>
+	
+	<media folder="media" destination="plg_editors-xtd_cotton">
+		<folder>js</folder>
+	</media>
+	
+	<languages>
+		<language tag="en-GB">language/en-GB/plg_editors-xtd_cotton.ini</language>
+		<language tag="en-GB">language/en-GB/plg_editors-xtd_cotton.sys.ini</language>
+		<language tag="pt-BR">language/pt-BR/plg_editors-xtd_cotton.ini</language>
+		<language tag="pt-BR">language/pt-BR/plg_editors-xtd_cotton.sys.ini</language>
+	</languages>
+</extension>

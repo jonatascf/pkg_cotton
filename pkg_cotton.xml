@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<extension type="package" method="upgrade">
+
+	<name>Cotton</name>
+	<author>Jonatas C. Ferreira</author>
+	<creationDate>July 2024</creationDate>
+	<authorEmail>jonatas@tabaoca.org</authorEmail>
+	<authorUrl>https://tabaoca.org</authorUrl>
+	<copyright>Copyright (C) 2024 Jonatas C. Ferreira. All rights reserved.</copyright>
+	<license>GNU/AGPL v3 https://www.gnu.org/licenses/agpl-3.0.html</license>
+	<description>Cotton Cloud is a database file storage system extension developed for Joomla!®.</description>
+	<version>2.0.0</version>
+	<packagename>cotton</packagename>
+	<url>https://joomla.tabaoca.org</url>
+	<packager>Jonatas C. Ferreira</packager>
+	<packagerurl>https://joomla.tabaoca.org</packagerurl>
+	<update>https://joomla.tabaoca.org</update>
+
+	<files folder="constituents">
+		<file type="component" id="com_cotton" >com_cotton</file>
+		<file type="component" id="com_shuttle" >com_shuttle</file>
+		<file type="component" id="com_weaver" >com_weaver</file>
+		<file type="module" id="mod_cotton" client="site">mod_cotton</file>
+		<file type="library" id="LibCotton">lib_cotton</file>
+		<file type="plugin" id="cotton" group="editors-xtd">plg_cotton</file>
+	</files>
+
+	<blockChildUninstall>true</blockChildUninstall>
+
+	<changelogurl>https://joomla.tabaoca.org/updates/cotton_changelog.xml</changelogurl>
+
+	<updateservers>
+		<server type="extension" name="Cotton Updates">https://joomla.tabaoca.org/updates/cotton.xml</server>
+	</updateservers>
+
+</extension>

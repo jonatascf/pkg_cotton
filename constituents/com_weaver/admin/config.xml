@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<config>
+	<fieldset
+		name="COM_WEAVER_NAME"
+		label="COM_WEAVER_CONFIG_SETTINGS_LABEL"
+		description="COM_WEAVER_CONFIG_SETTINGS_DESC"
+	>
+		<field
+			name="weaver_text_formats"
+			type="text"
+			label="COM_WEAVER_TEXT_FORMATS_LABEL"
+			description="COM_WEAVER_TEXT_FORMATS_DESC"
+			default="txt,md,ini,htm,html,xhtml,xml,js,mjs,php,css,sass,scss,less,csv,ics,json,jsonld,xul"
+		/>
+	</fieldset>
+	<fieldset
+		name="permissions"
+		label="JCONFIG_PERMISSIONS_LABEL"
+		description="JCONFIG_PERMISSIONS_DESC"
+	>
+		<field
+			name="rules"
+			type="rules"
+			label="JCONFIG_PERMISSIONS_LABEL"
+			class="inputbox"
+			validate="rules"
+			filter="rules"
+			component="com_weaver"
+			section="component"
+		/>
+	</fieldset>
+</config>

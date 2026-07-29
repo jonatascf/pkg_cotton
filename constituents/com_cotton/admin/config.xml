@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<config>
+	<fieldset
+		name="COM_COTTON_NAME"
+		label="COM_COTTON_CONFIG_SETTINGS_LABEL"
+		description="COM_COTTON_CONFIG_SETTINGS_DESC"
+	>
+		<field
+			name="cotton_theme"
+			type="list"
+			label="COM_COTTON_THEME_LABEL"
+			description="COM_COTTON_THEME_DESC"
+			default="0"
+			>
+			<option value="0">COM_COTTON_THEME_LIGHT</option>
+			<option value="1">COM_COTTON_THEME_DARK</option>
+		</field>
+		<field
+			name="cotton_ux"
+			type="radio"
+			label="COM_COTTON_UX_LABEL"
+			description="COM_COTTON_UX_DESC"
+			layout="joomla.form.field.radio.switcher"
+			default="0"
+			>
+			<option value="0">JNO</option>
+			<option value="1">JYES</option>
+		</field>
+		<field
+			name="cache_ttl"
+			type="number"
+			label="COM_COTTON_CACHE_TTL_LABEL"
+			description="COM_COTTON_CACHE_TTL_DESC"
+			default="30"
+			min="1"
+			max="3600"
+			step="1"
+			filter="int"
+			validate="number"
+			required="true"
+		/>
+		<field
+			name="cotton_limit_space"
+			type="list"
+			label="COM_COTTON_CUSTOM_LIMIT_SPACE_LABEL"
+			description="COM_COTTON_CUSTOM_LIMIT_SPACE_DESC"
+			default="0"
+			>
+			<option value="536870912">512MB</option>
+			<option value="1073741824">1GB</option>
+			<option value="2147483648">2GB</option>
+			<option value="5368709120">5GB</option>
+			<option value="10737418240">10GB</option>
+			<option value="21474836480">20GB</option>
+			<option value="53687091200">50GB</option>
+			<option value="107374182400">100GB</option>
+			<option value="161061273600">150GB</option>
+			<option value="0">COM_COTTON_UNLIMITED</option>
+		</field>
+		<field
+			name="cotton_text_formats"
+			type="text"
+			label="COM_COTTON_TEXT_FORMATS_LABEL"
+			description="COM_COTTON_TEXT_FORMATS_DESC"
+			default="txt,md,ini,htm,html,xhtml,xml,js,mjs,php,svg,css,sass,scss,less,csv,ics,json,jsonld,xul"
+		/>
+		<field
+			name="cotton_image_formats"
+			type="text"
+			label="COM_COTTON_IMAGE_FORMATS_LABEL"
+			description="COM_COTTON_IMAGE_FORMATS_DESC"
+			default="bmp,jpg,jpeg,jfif,pjpeg,pjp,png,apng,gif,svg,webp"
+			readonly="true"
+		/>
+		<field
+			name="cotton_video_formats"
+			type="text"
+			label="COM_COTTON_VIDEO_FORMATS_LABEL"
+			description="COM_COTTON_VIDEO_FORMATS_DESC"
+			default="mp4,webm,ogg"
+			readonly="true"
+		/>
+		<field
+			name="cotton_audio_formats"
+			type="text"
+			label="COM_COTTON_AUDIO_FORMATS_LABEL"
+			description="COM_COTTON_AUDIO_FORMATS_DESC"
+			default="wav,mp3,ogg"
+			readonly="true"
+		/>
+	</fieldset>
+</config>

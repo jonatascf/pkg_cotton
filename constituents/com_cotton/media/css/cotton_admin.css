@@ -1,0 +1,63 @@
+/**
+ * @package Tabaoca.Component.Cotton.Administrator
+ * @subpackage com_cotton
+ * @copyright (C) 2024 Jonatas C. Ferreira
+ * @license GNU/AGPL v3 https://www.gnu.org/licenses/agpl-3.0.html
+ */
+
+:root {
+	--cot-blue: #5091CD;
+	--cot-green: #7ac143;
+	--cot-red: #F44321;
+	--cot-orange: #F9A541;
+	--cot-gray1: #DDDDDD;
+	--cot-gray2: #AAAAAA;
+	--cot-gray3: #777777;
+}
+
+.field_data {
+	text-align: right;
+	color: black;
+	background-color: #FFF;
+	padding: 6px;
+	border-radius: 6px;
+	word-wrap: break-word;
+}
+
+.box_data {
+	padding: 6px;
+	border-radius: 2px;
+	margin-bottom: 6px;
+}
+
+table.cotton-config {
+	border: 1px solid #000;
+	margin-bottom: 10px;
+}
+
+table.cotton-config th {
+	background-color: var(--cot-gray3);
+	color:#000;
+	font-weight: bold;
+	padding-left: 5px;
+	padding-right: 10px;
+}
+
+table.cotton-config td {
+	background-color: var(--cot-gray1);
+	color:#000;
+	padding-left: 5px;
+	padding-right: 10px;
+}
+
+.cotton-logo {
+	width: 100%;
+	filter: drop-shadow(0 0 0.75rem var(--cot-blue));
+}
+
+.cotton-name {
+	font-family: 'Courier New', Courier, monospace;
+	font-size: xx-large;
+	color: #000;
+	filter: drop-shadow(0 0 0.75rem var(--cot-gray1));
+}

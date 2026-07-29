@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<extension type="component" method="upgrade">
+
+	<name>COM_COTTON</name>
+	<author>Jonatas C. Ferreira</author>
+	<creationDate>July 2024</creationDate>
+	<authorEmail>jonatas@tabaoca.org</authorEmail>
+	<authorUrl>https://tabaoca.org</authorUrl>
+	<copyright>Copyright (C) 2024 Jonatas C. Ferreira. All rights reserved.</copyright>
+	<license>GNU/AGPL v3 https://www.gnu.org/licenses/agpl-3.0.html</license>
+	<version>2.0.0</version>
+	<description>COM_COTTON_DESCRIPTION</description>
+	<element>com_cotton</element>
+
+	<namespace path="src">Tabaoca\Component\Cotton</namespace>
+
+	<install>
+		<sql>
+			<file driver="mysql" charset="utf8">sql/install.mysql.utf8.sql</file>
+		</sql>
+	</install>
+
+	<uninstall>
+		<sql>
+			<file driver="mysql" charset="utf8">sql/uninstall.mysql.utf8.sql</file>
+		</sql>
+	</uninstall>
+
+	<files folder="site">
+		<folder>src</folder>
+		<folder>tmpl</folder>
+	</files>
+
+	<languages folder="site/language">
+		<language tag="en-GB">en-GB/en-GB.com_cotton.ini</language>
+		<language tag="pt-BR">pt-BR/pt-BR.com_cotton.ini</language>
+	</languages>
+
+	<media folder="media" destination="com_cotton">
+ 		<folder>js</folder>
+		<folder>css</folder>
+		<folder>images</folder>
+		<filename>joomla.asset.json</filename>
+	</media>
+
+	<administration>
+
+		<menu link="option=com_cotton&amp;view=cotton" img="class:comments-2">COM_COTTON</menu>
+
+		<files folder="admin">
+			<file>access.xml</file>
+			<file>config.xml</file>
+			<folder>services</folder>
+			<folder>src</folder>
+			<folder>tmpl</folder>
+			<folder>sql</folder>
+		</files>
+
+		<languages folder="admin/language">
+			<language tag="en-GB">en-GB/en-GB.com_cotton.ini</language>
+			<language tag="en-GB">en-GB/en-GB.com_cotton.sys.ini</language>
+			<language tag="pt-BR">pt-BR/pt-BR.com_cotton.ini</language>
+			<language tag="pt-BR">pt-BR/pt-BR.com_cotton.sys.ini</language>
+		</languages>
+
+	</administration>
+
+</extension>

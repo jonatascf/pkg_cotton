@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<extension type="library" method="upgrade">
+
+	<name>Cotton Cloud Library</name>
+	<libraryname>LibCotton</libraryname>
+	<author>Jonatas C. Ferreira</author>
+	<creationDate>July 2024</creationDate>
+	<authorEmail>jonatas@tabaoca.org</authorEmail>
+	<authorUrl>https://tabaoca.org</authorUrl>
+	<copyright>Copyright (C) 2024 Jonatas C. Ferreira. All rights reserved.</copyright>
+	<license>GNU/AGPL v3 https://www.gnu.org/licenses/agpl-3.0.html</license>
+	<description>Library for handling Cotton Cloud integration.</description>
+	<version>2.0.0</version>
+	<element>lib_cotton</element>
+
+	<namespace path="src">Tabaoca\LibCotton</namespace>
+
+	<files>
+		<folder>src</folder>
+	</files>
+
+</extension>

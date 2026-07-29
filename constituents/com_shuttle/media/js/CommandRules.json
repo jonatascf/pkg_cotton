@@ -1,0 +1,828 @@
+{
+  "help": {
+    "description": "Displays this help message or details about a specific command.",
+    "options": [
+      {
+        "name": "-h",
+        "alias": "--help",
+        "description": "Displays help for the specified command or the list of commands."
+      }
+    ],
+    "parameters": {
+      "min": 0,
+      "max": 1,
+      "description": "Optional. The name of the command to display detailed help for."
+    }
+  },
+  "ls": {
+    "description": "Lists files and directories in the current directory or a specific path.",
+    "options": [
+      {
+        "name": "-i",
+        "alias": "--id",
+        "description": "Uses the numeric folder ID instead of a path.",
+        "hasValue": true
+      },
+      {
+        "name": "--json",
+        "alias": "-j",
+        "description": "Returns the listing in raw JSON instead of rendering a table."
+      },
+      {
+        "name": "-l",
+        "alias": "--long",
+        "description": "Displays a detailed listing with type, size, date, and path."
+      },
+      {
+        "name": "-R",
+        "alias": "--recursive",
+        "description": "Lists subdirectories recursively."
+      },
+      {
+        "name": "--sort",
+        "description": "Sorts results by name, date, size, or type.",
+        "hasValue": true
+      }
+    ],
+    "parameters": {
+      "min": 0,
+      "max": 1,
+      "description": "Optional. The path of the directory to list or the ID when using -i/--id."
+    }
+  },
+  "lsmedia": {
+    "description": "Lists media devices (cameras, microphones, speakers) connected to the system.",
+    "options": [],
+    "parameters": {
+      "min": 0,
+      "max": 0,
+      "description": "No parameters needed."
+    }
+  },
+  "lsusb": {
+    "description": "Lists connected USB devices that the browser has permission to access.",
+    "options": [
+      {
+        "name": "-c",
+        "alias": "--connect",
+        "description": "Connects a USB device."
+      }
+    ],
+    "parameters": {
+      "min": 0,
+      "max": 0,
+      "description": "No parameters needed."
+    }
+  },
+  "lsgamepad": {
+    "description": "Lists gamepads and game controllers connected to the system.",
+    "options": [],
+    "parameters": {
+      "min": 0,
+      "max": 0,
+      "description": "No parameters needed."
+    }
+  },
+  "lsgpu": {
+    "description": "Displays basic GPU information of the system via WebGL.",
+    "options": [],
+    "parameters": {
+      "min": 0,
+      "max": 0,
+      "description": "No parameters needed."
+    }
+  },
+  "storage": {
+    "description": "Displays the content and usage of the browser's local storage (localStorage).",
+    "options": [],
+    "parameters": {
+      "min": 0,
+      "max": 0,
+      "description": "No parameters needed."
+    }
+  },
+  "memory": {
+    "description": "Displays basic information about browser memory usage.",
+    "options": [],
+    "parameters": {
+      "min": 0,
+      "max": 0,
+      "description": "No parameters needed."
+    }
+  },
+  "connection": {
+    "description": "Displays network connection information (type, speed, etc.).",
+    "options": [],
+    "parameters": {
+      "min": 0,
+      "max": 0,
+      "description": "No parameters needed."
+    }
+  },
+  "ip": {
+    "description": "Displays the user's public IP address.",
+    "options": [],
+    "parameters": {
+      "min": 0,
+      "max": 0,
+      "description": "No parameters needed."
+    }
+  },
+  "geo": {
+    "description": "Displays the user's geolocation information (latitude and longitude).",
+    "options": [],
+    "parameters": {
+      "min": 0,
+      "max": 0,
+      "description": "No parameters needed."
+    }
+  },
+  "cd": {
+    "description": "Changes the working directory.",
+    "options": [
+      {
+        "name": "-i",
+        "alias": "--id",
+        "description": "Uses the numeric folder ID instead of a path.",
+        "hasValue": true
+      },
+      {
+        "name": "--json",
+        "alias": "-j",
+        "description": "Returns the result in raw JSON."
+      }
+    ],
+    "parameters": {
+      "min": 1,
+      "max": 10,
+      "description": "The path of the directory to navigate to or the folder ID when using -i/--id."
+    }
+  },
+  "cat": {
+    "description": "Displays the content of a Cotton Cloud file. Always use -i with the file's numeric ID.",
+    "options": [
+      {
+        "name": "-i",
+        "alias": "--id",
+        "description": "Uses the file's numeric ID instead of a virtual path.",
+        "hasValue": true
+      },
+      {
+        "name": "-n",
+        "alias": "--number",
+        "description": "Numbers all output lines."
+      },
+      {
+        "name": "-b",
+        "alias": "--number-nonblank",
+        "description": "Numbers only non-blank lines."
+      },
+      {
+        "name": "-s",
+        "alias": "--squeeze-blank",
+        "description": "Suppresses repeated blank lines."
+      },
+      {
+        "name": "--json",
+        "alias": "-j",
+        "description": "Returns the content in raw JSON."
+      }
+    ],
+    "parameters": {
+      "min": 1,
+      "max": 1,
+      "description": "The virtual path or ID of the file to display."
+    }
+  },
+  "find": {
+    "description": "Searches for files and folders in Cotton Cloud by name or path term.",
+    "options": [
+      {
+        "name": "-t",
+        "alias": "--type",
+        "description": "Filters the result type: file, folder, or all.",
+        "hasValue": true
+      },
+      {
+        "name": "-n",
+        "alias": "--name-only",
+        "description": "Returns only the names of the found items."
+      },
+      {
+        "name": "-c",
+        "alias": "--count",
+        "description": "Returns only the total number of found items."
+      },
+      {
+        "name": "--json",
+        "alias": "-j",
+        "description": "Returns the results in raw JSON instead of rendering a table."
+      }
+    ],
+    "parameters": {
+      "min": 1,
+      "max": 5,
+      "description": "The search term or virtual path."
+    }
+  },
+  "grep": {
+    "description": "Searches for patterns in Cotton Cloud files. Always use -i with the file's numeric ID.",
+    "options": [
+      {
+        "name": "-i",
+        "alias": "--ignore-case",
+        "description": "Ignores case in the search."
+      },
+      {
+        "name": "-n",
+        "alias": "--line-number",
+        "description": "Displays the line number before each result."
+      },
+      {
+        "name": "-H",
+        "alias": "--with-filename",
+        "description": "Always displays the filename before each result."
+      },
+      {
+        "name": "-h",
+        "alias": "--no-filename",
+        "description": "Suppresses the display of the filename."
+      },
+      {
+        "name": "-v",
+        "alias": "--invert-match",
+        "description": "Inverts the match: displays lines that do NOT match the pattern."
+      },
+      {
+        "name": "-L",
+        "alias": "--files-without-match",
+        "description": "Lists only files that do NOT have matches."
+      },
+      {
+        "name": "-l",
+        "alias": "--files-with-matches",
+        "description": "Lists only files that have matches."
+      },
+      {
+        "name": "-c",
+        "alias": "--count",
+        "description": "Displays only the total number of matching lines per file."
+      },
+      {
+        "name": "-E",
+        "alias": "--extended-regexp",
+        "description": "Interprets the pattern as an extended regular expression."
+      },
+      {
+        "name": "-e",
+        "alias": "--regexp",
+        "description": "Specifies the search pattern (useful for patterns starting with -).",
+        "hasValue": true
+      },
+      {
+        "name": "--json",
+        "alias": "-j",
+        "description": "Returns the results in raw JSON format."
+      }
+    ],
+    "parameters": {
+      "min": 2,
+      "max": 20,
+      "description": "Search pattern and one or more files/paths."
+    }
+  },
+  "head": {
+    "description": "Displays the first lines of a Cotton Cloud file. Always use -i with the file's numeric ID.",
+    "options": [
+      {
+        "name": "-n",
+        "alias": "--lines",
+        "description": "Number of lines to display.",
+        "hasValue": true
+      },
+      {
+        "name": "-q",
+        "alias": "--quiet",
+        "description": "Does not display the filename header."
+      },
+      {
+        "name": "-v",
+        "alias": "--verbose",
+        "description": "Always displays the filename header."
+      },
+      {
+        "name": "-i",
+        "alias": "--id",
+        "description": "Uses the file's numeric ID instead of a virtual path.",
+        "hasValue": true
+      },
+      {
+        "name": "--json",
+        "alias": "-j",
+        "description": "Returns the result in raw JSON."
+      }
+    ],
+    "parameters": {
+      "min": 1,
+      "max": 1,
+      "description": "The virtual path or ID of the file."
+    }
+  },
+  "tail": {
+    "description": "Displays the last lines of a Cotton Cloud file. Always use -i with the file's numeric ID.",
+    "options": [
+      {
+        "name": "-n",
+        "alias": "--lines",
+        "description": "Number of lines to display.",
+        "hasValue": true
+      },
+      {
+        "name": "-q",
+        "alias": "--quiet",
+        "description": "Does not display the filename header."
+      },
+      {
+        "name": "-v",
+        "alias": "--verbose",
+        "description": "Always displays the filename header."
+      },
+      {
+        "name": "-i",
+        "alias": "--id",
+        "description": "Uses the file's numeric ID instead of a virtual path.",
+        "hasValue": true
+      },
+      {
+        "name": "--json",
+        "alias": "-j",
+        "description": "Returns the result in raw JSON."
+      }
+    ],
+    "parameters": {
+      "min": 1,
+      "max": 1,
+      "description": "The virtual path or ID of the file."
+    }
+  },
+  "sed": {
+    "description": "Edits text in a file without opening it, with support for search, replace, insert, and delete. Always use -i with the file's numeric ID.",
+    "options": [
+      {
+        "name": "-i",
+        "alias": "--in-place",
+        "description": "Saves changes directly to the file."
+      },
+      {
+        "name": "-n",
+        "alias": "--quiet",
+        "description": "Suppresses automatic line output."
+      },
+      {
+        "name": "-e",
+        "alias": "--expression",
+        "description": "The sed expression to execute.",
+        "hasValue": true
+      },
+      {
+        "name": "-i",
+        "alias": "--id",
+        "description": "Uses the file's numeric ID instead of a virtual path.",
+        "hasValue": true
+      },
+      {
+        "name": "--json",
+        "alias": "-j",
+        "description": "Returns the result in raw JSON."
+      }
+    ],
+    "parameters": {
+      "min": 2,
+      "max": 10,
+      "description": "The virtual path or ID of the file, followed by sed expressions."
+    }
+  },
+  "cc-resolve": {
+    "description": "Resolves a virtual path or numeric ID to Cotton Cloud metadata. Always use -i with the numeric ID.",
+    "options": [
+      {
+        "name": "-i",
+        "alias": "--id",
+        "description": "Treats the argument as the numeric ID of a file or folder.",
+        "hasValue": true
+      },
+      {
+        "name": "--name-only",
+        "description": "Returns only the name of the resolved item."
+      },
+      {
+        "name": "--path-only",
+        "description": "Returns only the virtual path of the resolved item."
+      },
+      {
+        "name": "--type-only",
+        "description": "Returns only the type of the resolved item (file or folder)."
+      },
+      {
+        "name": "--json",
+        "alias": "-j",
+        "description": "Returns the resolved metadata in raw JSON."
+      }
+    ],
+    "parameters": {
+      "min": 1,
+      "max": 1,
+      "description": "The Cotton virtual path or file/folder ID."
+    }
+  },
+  "run": {
+    "description": "Executes a Shuttle (.shuttle) script stored in Cotton Cloud.",
+    "options": [
+      {
+        "name": "-i",
+        "alias": "--id",
+        "description": "Uses the script's numeric ID instead of a virtual path.",
+        "hasValue": true
+      },
+      {
+        "name": "--dry-run",
+        "description": "Simulates execution without applying changes."
+      },
+      {
+        "name": "--verbose",
+        "description": "Displays detailed output for each step."
+      },
+      {
+        "name": "--start-line",
+        "description": "Starts execution from a specific line.",
+        "hasValue": true
+      },
+      {
+        "name": "--end-line",
+        "description": "Ends execution at a specific line.",
+        "hasValue": true
+      },
+      {
+        "name": "--json",
+        "alias": "-j",
+        "description": "Returns the result in raw JSON."
+      }
+    ],
+    "parameters": {
+      "min": 1,
+      "max": 1,
+      "description": "The ID of the file or virtual path of the .shuttle script."
+    }
+  },
+  "cotton-create": {
+    "description": "Creates a new file in Cotton Cloud in an existing folder. ALWAYS provide folder and name. Example: {\"folder\":\"/docs\", \"name\":\"readme.md\"}",
+    "options": [
+      {
+        "name": "--id",
+        "alias": "-i",
+        "description": "Uses the folder's numeric ID instead of a virtual path.",
+        "hasValue": true
+      },
+      {
+        "name": "--folder",
+        "description": "Virtual path or folder ID where to create the file. E.g., /docs or 42",
+        "hasValue": true
+      },
+      {
+        "name": "--name",
+        "description": "Name of the file to create. E.g., readme.md",
+        "hasValue": true
+      },
+      {
+        "name": "--content",
+        "description": "Initial content of the file.",
+        "hasValue": true
+      },
+      {
+        "name": "--description",
+        "description": "Optional description of the file.",
+        "hasValue": true
+      },
+      {
+        "name": "--json",
+        "alias": "-j",
+        "description": "Returns the result in raw JSON."
+      }
+    ],
+    "parameters": {
+      "min": 2,
+      "max": 2,
+      "description": "Required: folder + name."
+    }
+  },
+  "cotton-save": {
+    "description": "Saves content in an existing Cotton Cloud file. Always use -i with the file's numeric ID.",
+    "options": [
+      {
+        "name": "-i",
+        "alias": "--id",
+        "description": "Uses the file's numeric ID instead of a virtual path.",
+        "hasValue": true
+      },
+      {
+        "name": "--content",
+        "description": "The complete content to save in the file.",
+        "hasValue": true
+      },
+      {
+        "name": "--json",
+        "alias": "-j",
+        "description": "Returns the result in raw JSON."
+      }
+    ],
+    "parameters": {
+      "min": 1,
+      "max": 1,
+      "description": "The ID or virtual path of the file to save."
+    }
+  },
+  "cotton-delete": {
+    "description": "Removes a file from Cotton Cloud.",
+    "options": [
+      {
+        "name": "-i",
+        "alias": "--id",
+        "description": "Uses the file's numeric ID instead of a virtual path.",
+        "hasValue": true
+      },
+      {
+        "name": "--json",
+        "alias": "-j",
+        "description": "Returns the result in raw JSON."
+      }
+    ],
+    "parameters": {
+      "min": 1,
+      "max": 1,
+      "description": "The ID or virtual path of the file to delete."
+    }
+  },
+  "mkdir": {
+    "description": "Creates a new directory at the specified path. ALWAYS provide the full path. Example: {\"path\":\"/docs/new-folders\"}",
+    "options": [
+      {
+        "name": "--parents",
+        "alias": "-p",
+        "description": "Creates parent directories automatically if they do not exist."
+      },
+      {
+        "name": "--json",
+        "alias": "-j",
+        "description": "Returns the result in raw JSON."
+      }
+    ],
+    "parameters": {
+      "min": 1,
+      "max": 1,
+      "description": "Required: full path of the new directory."
+    }
+  },
+  "rmdir": {
+    "description": "Removes a directory from Cotton Cloud, optionally with all its content.",
+    "options": [
+      {
+        "name": "-i",
+        "alias": "--id",
+        "description": "Uses the folder's numeric ID instead of a virtual path.",
+        "hasValue": true
+      },
+      {
+        "name": "-r",
+        "alias": "--recursive",
+        "description": "Removes the folder and all its content recursively."
+      },
+      {
+        "name": "-f",
+        "alias": "--force",
+        "description": "Forces permanent removal without sending to the trash."
+      },
+      {
+        "name": "--json",
+        "alias": "-j",
+        "description": "Returns the result in raw JSON."
+      }
+    ],
+    "parameters": {
+      "min": 1,
+      "max": 1,
+      "description": "The virtual path or ID of the folder to remove."
+    }
+  },
+  "mv": {
+    "description": "Moves a file or directory to another location in Cotton Cloud.",
+    "options": [
+      {
+        "name": "-f",
+        "alias": "--force",
+        "description": "Forces the move without confirmation."
+      },
+      {
+        "name": "--json",
+        "alias": "-j",
+        "description": "Returns the result in raw JSON."
+      }
+    ],
+    "parameters": {
+      "min": 2,
+      "max": 2,
+      "description": "Source (file or folder) and destination (folder)."
+    }
+  },
+  "cp": {
+    "description": "Copies a file or directory to another location in Cotton Cloud, with support for recursive folder copying.",
+    "options": [
+      {
+        "name": "-i",
+        "alias": "--id",
+        "description": "Uses the source's numeric ID instead of a virtual path.",
+        "hasValue": true
+      },
+      {
+        "name": "-r",
+        "alias": "--recursive",
+        "description": "Copies folders and their content recursively."
+      },
+      {
+        "name": "-f",
+        "alias": "--force",
+        "description": "Overwrites the destination if it already exists."
+      },
+      {
+        "name": "-n",
+        "alias": "--no-clobber",
+        "description": "Does not overwrite if the destination already exists."
+      },
+      {
+        "name": "--json",
+        "alias": "-j",
+        "description": "Returns the result in raw JSON."
+      }
+    ],
+    "parameters": {
+      "min": 2,
+      "max": 2,
+      "description": "Source (file or folder) and destination (folder)."
+    }
+  },
+  "nav": {
+    "description": "Displays information about the browser and operating system.",
+    "options": [],
+    "parameters": {
+      "min": 0,
+      "max": 0,
+      "description": "No parameters needed."
+    }
+  },
+  "clear": {
+    "description": "Clears the terminal screen.",
+    "options": [],
+    "parameters": {
+      "min": 0,
+      "max": 0,
+      "description": "No parameters needed."
+    }
+  },
+  "joomla": {
+    "description": "Lists the Joomla articles of the current user.",
+    "options": [
+      {
+        "name": "-a",
+        "alias": "--articles",
+        "description": "Lists the articles."
+      },
+      {
+        "name": "--json",
+        "alias": "-j",
+        "description": "Returns the article list in raw JSON."
+      }
+    ],
+    "parameters": {
+      "min": 0,
+      "max": 0,
+      "description": "No parameters needed."
+    }
+  },
+  "ai": {
+    "description": "Processes a natural language request and executes operations in Cotton Cloud via an AI assistant.",
+    "options": [
+      {
+        "name": "--model",
+        "description": "ID of the KILO CODE model to use.",
+        "hasValue": true
+      },
+      {
+        "name": "--stream",
+        "description": "Returns the response in SSE streaming."
+      },
+      {
+        "name": "--json",
+        "alias": "-j",
+        "description": "Returns the result in raw JSON."
+      }
+    ],
+    "parameters": {
+      "min": 1,
+      "max": 1,
+      "description": "The command or question in natural language."
+    }
+  },
+  "weaver-set-content": {
+    "description": "Edits the content of an open tab in the Weaver editor directly in CodeMirror. Use -i with the file's numeric ID.",
+    "options": [
+      {
+        "name": "-i",
+        "alias": "--id",
+        "description": "Uses the file's numeric ID instead of a virtual path.",
+        "hasValue": true
+      },
+      {
+        "name": "--content",
+        "description": "New content to set in the editor.",
+        "hasValue": true
+      },
+      {
+        "name": "--json",
+        "alias": "-j",
+        "description": "Returns the result in raw JSON."
+      }
+    ],
+    "parameters": {
+      "min": 1,
+      "max": 1,
+      "description": "The ID or virtual path of the file to edit."
+    }
+  },
+  "weaver:tabs": {
+    "description": "Lists all open tabs in the Weaver editor.",
+    "options": [],
+    "parameters": {
+      "min": 0,
+      "max": 0
+    }
+  },
+  "weaver:active": {
+    "description": "Shows the currently active tab in the Weaver editor.",
+    "options": [],
+    "parameters": {
+      "min": 0,
+      "max": 0
+    }
+  },
+  "weaver:open": {
+    "description": "Opens a file in a new tab in the Weaver editor.",
+    "options": [],
+    "parameters": {
+      "min": 1,
+      "max": 1,
+      "description": "The numeric ID of the file to open."
+    }
+  },
+  "weaver:create-file": {
+    "description": "Creates a new file in the Weaver editor.",
+    "options": [],
+    "parameters": {
+      "min": 2,
+      "max": 2,
+      "description": "The folder ID and the filename."
+    }
+  },
+  "weaver:create-folder": {
+    "description": "Creates a new folder in the Weaver editor.",
+    "options": [],
+    "parameters": {
+      "min": 2,
+      "max": 2,
+      "description": "The folder ID and the folder name."
+    }
+  },
+  "weaver:save": {
+    "description": "Saves the content of the active tab in the Weaver editor.",
+    "options": [],
+    "parameters": {
+      "min": 0,
+      "max": 0
+    }
+  },
+  "weaver:edit": {
+    "description": "Edits the content of an open tab directly in CodeMirror.",
+    "options": [],
+    "parameters": {
+      "min": 2,
+      "max": 2,
+      "description": "The file ID and the new content."
+    }
+  },
+  "weaver:root": {
+    "description": "Shows the ID of the Weaver folder tree root folder.",
+    "options": [],
+    "parameters": {
+      "min": 0,
+      "max": 0
+    }
+  }
+}
