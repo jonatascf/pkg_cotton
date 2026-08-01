@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS `#__cotton_file`(
 	`date_created` DATETIME NOT NULL,
 	`date_updated` DATETIME NOT NULL,
 	`featured` TINYINT NOT NULL DEFAULT 0,
-	`file_data` LONGBLOB NOT NULL DEFAULT '',
+	`file_data` LONGBLOB,
 	`size` INT(20) NOT NULL DEFAULT 0,
 	`folder_id` INT(11) NOT NULL,
 	`allowed_users` LONGTEXT,
