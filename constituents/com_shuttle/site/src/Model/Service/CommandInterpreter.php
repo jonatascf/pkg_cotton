@@ -2529,7 +2529,7 @@ public function execute(string $rawCommand, string $cwd, array $options = [], ar
 		}
 
 		if ($folderTarget === null || $fileName === null) {
-			error_log('[cotton-create] missing identifier. args=' . json_encode($args) . ', options=' . json_encode($options));
+			//error_log('[cotton-create] missing identifier. args=' . json_encode($args) . ', options=' . json_encode($options));
 			return ['error' => 'cotton-create requires a folder identifier and file name'];
 		}
 
@@ -3175,7 +3175,7 @@ public function execute(string $rawCommand, string $cwd, array $options = [], ar
 
 		if ($statusCode >= 400) {
 			$decodedError = json_decode($response, true);
-			error_log('[Shuttle KILO API Error] Status: ' . $statusCode . ' Response: ' . $response);
+			//error_log('[Shuttle KILO API Error] Status: ' . $statusCode . ' Response: ' . $response);
 			return [
 				'error' => true,
 				'status_code' => $statusCode,
@@ -3187,7 +3187,7 @@ public function execute(string $rawCommand, string $cwd, array $options = [], ar
 
 		$decoded = json_decode($response, true);
 		if (!is_array($decoded)) {
-			error_log('[Shuttle KILO API Error] Invalid JSON response: ' . $response);
+			//error_log('[Shuttle KILO API Error] Invalid JSON response: ' . $response);
 			return [
 				'error' => true,
 				'message' => 'Invalid JSON response from KILO API',
@@ -3548,7 +3548,7 @@ PROMPT;
 		$toolsCount = count($toolsPayload);
 		$messagesCount = count($messages);
 
-		error_log('[Shuttle KILO Debug] Model: ' . $options['model'] . ' | SystemPromptLength: ' . $systemPromptLength . ' | ToolsCount: ' . $toolsCount . ' | MessagesCount: ' . $messagesCount);
+		//error_log('[Shuttle KILO Debug] Model: ' . $options['model'] . ' | SystemPromptLength: ' . $systemPromptLength . ' | ToolsCount: ' . $toolsCount . ' | MessagesCount: ' . $messagesCount);
 
 		for ($round = 0; $round < $maxToolRounds; $round++) {
 			$payload = [
@@ -3563,7 +3563,7 @@ PROMPT;
 			}
 
 			$payloadJson = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-			error_log('[Shuttle KILO Payload] Round ' . ($round + 1) . ': ' . $payloadJson);
+			//error_log('[Shuttle KILO Payload] Round ' . ($round + 1) . ': ' . $payloadJson);
 
 			$apiResult = $this->callKiloApi($payload, $baseUrl, $apiKey, false);
 

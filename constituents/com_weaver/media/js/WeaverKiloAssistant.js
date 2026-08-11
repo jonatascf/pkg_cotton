@@ -6,12 +6,12 @@
  */
 
 /**
- * Shuttle AI Assistant - Estado e configuracao
+ * WeaverKiloAssistant - AI assistant state and configuration
  *
- * Responsavel apenas por:
- * - Armazenar configuracao (modelo, modo, historico).
- * - Manter referencias de tools/resources/prompts recebidas do MCP.
- * - Iniciar o stream via WeaverMCPClient.
+ * Responsible only for:
+ * - Storing configuration (model, mode, history).
+ * - Keeping references of tools/resources/prompts received from MCP.
+ * - Starting the stream via WeaverMCPClient.
  */
 
 const WeaverKiloAssistant = (() => {
@@ -26,6 +26,11 @@ const WeaverKiloAssistant = (() => {
 	let dynamicResources = [];
 	let dynamicPrompts = [];
 
+	/**
+	 * Builds the stream request payload for the AI gateway.
+	 * @param {string} userInput - User message text
+	 * @returns {Object} Stream arguments
+	 */
 	function buildStreamArgs(userInput) {
 		return {
 			prompt: userInput,
@@ -39,6 +44,10 @@ const WeaverKiloAssistant = (() => {
 		};
 	}
 
+	/**
+	 * Appends a user message to the conversation history.
+	 * @param {string} userInput - User message text
+	 */
 	function pushUserMessage(userInput) {
 		conversationHistory.push({
 			role: 'user',
@@ -50,6 +59,11 @@ const WeaverKiloAssistant = (() => {
 		}
 	}
 
+	/**
+	 * Appends an assistant message to the conversation history.
+	 * @param {string} content - Assistant response text
+	 * @param {Array} [toolCalls] - Tool calls made during the response
+	 */
 	function pushAssistantMessage(content, toolCalls) {
 		const entry = {
 			role: 'assistant',
@@ -74,6 +88,11 @@ const WeaverKiloAssistant = (() => {
 		}
 	}
 
+	/**
+	 * Appends a tool result message to the conversation history.
+	 * @param {string} toolCallId - Tool call ID
+	 * @param {string} content - Tool result content
+	 */
 	function pushToolMessage(toolCallId, content) {
 		conversationHistory.push({
 			role: 'tool',
@@ -86,6 +105,20 @@ const WeaverKiloAssistant = (() => {
 		}
 	}
 
+	/**
+	 * Starts an AI stream with the given user input and MCP client.
+	 * @param {string} userInput - User message text
+	 * @param {Object} mcpClient - MCP client instance
+	 * @param {Object} [callbacks={}] - Event callbacks
+	 * @param {Function} [callbacks.onMessage] - Called on text chunk
+	 * @param {Function} [callbacks.onReasoning] - Called on reasoning chunk
+	 * @param {Function} [callbacks.onToolCall] - Called on tool call
+	 * @param {Function} [callbacks.onToolResult] - Called on tool result
+	 * @param {Function} [callbacks.onDone] - Called when stream completes
+	 * @param {Function} [callbacks.onError] - Called on error
+	 * @param {AbortSignal} [callbacks.signal] - Abort signal
+	 * @returns {Promise<Object>} Stream result
+	 */
 	async function startStream(userInput, mcpClient, callbacks = {}) {
 		const onMessage = typeof callbacks.onMessage === 'function' ? callbacks.onMessage : null;
 		const onReasoning = typeof callbacks.onReasoning === 'function' ? callbacks.onReasoning : null;
@@ -132,74 +165,145 @@ const WeaverKiloAssistant = (() => {
 		}
 	}
 
+	/**
+	 * Sets the selected AI model.
+	 * @param {string} model - Model identifier
+	 */
 	function setModel(model) {
 		selectedModel = model;
 	}
 
+	/**
+	 * Gets the currently selected AI model.
+	 * @returns {string} Model identifier
+	 */
 	function getModel() {
 		return selectedModel;
 	}
 
+	/**
+	 * Sets the assistant mode.
+	 * @param {string} mode - Mode identifier
+	 */
 	function setMode(mode) {
 		selectedMode = mode;
 	}
 
+	/**
+	 * Gets the current assistant mode.
+	 * @returns {string} Mode identifier
+	 */
 	function getMode() {
 		return selectedMode;
 	}
 
+	/**
+	 * Sets the API base URL.
+	 * @param {string} url - Base URL
+	 */
 	function setBaseUrl(url) {
 		baseUrl = url.replace(/\/$/, '');
 	}
 
+	/**
+	 * Gets the current API base URL.
+	 * @returns {string} Base URL
+	 */
 	function getBaseUrl() {
 		return baseUrl;
 	}
 
+	/**
+	 * Sets dynamic tool definitions received from MCP.
+	 * @param {Array} tools - Tool definitions
+	 */
 	function setToolDefinitions(tools) {
 		dynamicToolDefinitions = Array.isArray(tools) ? tools : [];
 	}
 
+	/**
+	 * Gets the current dynamic tool definitions.
+	 * @returns {Array} Tool definitions
+	 */
 	function getToolDefinitions() {
 		return dynamicToolDefinitions;
 	}
 
+	/**
+	 * Sets dynamic resources received from MCP.
+	 * @param {Array} resources - Resource definitions
+	 */
 	function setResources(resources) {
 		dynamicResources = Array.isArray(resources) ? resources : [];
 	}
 
+	/**
+	 * Gets the current dynamic resources.
+	 * @returns {Array} Resource definitions
+	 */
 	function getResources() {
 		return dynamicResources;
 	}
 
+	/**
+	 * Sets dynamic prompts received from MCP.
+	 * @param {Array} prompts - Prompt definitions
+	 */
 	function setPrompts(prompts) {
 		dynamicPrompts = Array.isArray(prompts) ? prompts : [];
 	}
 
+	/**
+	 * Gets the current dynamic prompts.
+	 * @returns {Array} Prompt definitions
+	 */
 	function getPrompts() {
 		return dynamicPrompts;
 	}
 
+	/**
+	 * Clears the conversation history.
+	 */
 	function clearHistory() {
 		conversationHistory = [];
 	}
 
+	/**
+	 * Gets the current conversation history.
+	 * @returns {Array} Conversation messages
+	 */
 	function getConversationHistory() {
 		return conversationHistory;
 	}
 
+	/**
+	 * Sets the conversation history, trimming to max history length.
+	 * @param {Array} history - Conversation messages
+	 */
 	function setConversationHistory(history) {
 		conversationHistory = Array.isArray(history) ? history.slice(-maxHistory) : [];
 	}
 
+	/**
+	 * Gets the maximum conversation history length.
+	 * @returns {number} Max history length
+	 */
 	function getMaxHistory() {
 		return maxHistory;
 	}
 
+	/**
+	 * Sets the maximum conversation history length.
+	 * @param {number} value - Max history length (1-100)
+	 */
 	function setMaxHistory(value) {
 		maxHistory = Math.max(1, Math.min(100, value));
 	}
 
+	/**
+	 * Gets the list of free model identifiers.
+	 * @returns {string[]} Free model identifiers
+	 */
 	function getFreeModels() {
 		return [
 			'kilo-auto/free',

@@ -6,8 +6,8 @@
  */
 
 /**
- * CottonMediaHandler - Gerencia streaming, preview e manipulação de mídia
- * Suporta vídeo, áudio e imagem com resoluções dinâmicas.
+ * CottonMediaHandler - Manages streaming, preview, and media handling
+ * Supports video, audio, and images with dynamic resolutions.
  * 
  * @class
  * @example
@@ -32,16 +32,16 @@ export class CottonMediaHandler {
     #listeners = {};
 
     /**
-     * Construtor
-     * @param {number|string} fileId - ID do arquivo
-     * @param {string} mimeType - Tipo MIME do arquivo
-     * @param {string} fileName - Nome do arquivo
-     * @param {Object} options - Configurações
-     *   @param {string} [options.quality='auto'] - Qualidade: 'low', 'medium', 'high', 'auto'
-     *   @param {boolean} [options.autoPlay=false] - Auto-play de mídia
-     *   @param {boolean} [options.loop=false] - Loop de mídia
-     *   @param {boolean} [options.muted=false] - Iniciar mutado
-     *   @param {Object} [options.metadata=null] - Metadados das mídias/versões
+     * Constructor
+     * @param {number|string} fileId - File ID
+     * @param {string} mimeType - File MIME type
+     * @param {string} fileName - File name
+     * @param {Object} options - Settings
+     *   @param {string} [options.quality='auto'] - Quality: 'low', 'medium', 'high', 'auto'
+     *   @param {boolean} [options.autoPlay=false] - Auto-play media
+     *   @param {boolean} [options.loop=false] - Media loop
+     *   @param {boolean} [options.muted=false] - Start muted
+     *   @param {Object} [options.metadata=null] - Media/version metadata
      */
     constructor(fileId, mimeType, fileName, options = {}) {
         this.#fileId = fileId;
@@ -59,7 +59,7 @@ export class CottonMediaHandler {
     }
 
     /**
-     * Cria elemento de mídia HTML5 (vídeo, áudio ou imagem)
+     * Creates HTML5 media element (video, audio, or image)
      * @returns {Promise<HTMLElement>}
      */
     async createMediaElement() {
@@ -72,9 +72,9 @@ export class CottonMediaHandler {
                 return await this.#createImageElement();
             }
 
-            throw new Error(`Tipo de mídia não suportado: ${this.#mimeType}`);
+            throw new Error(`Unsupported media type: ${this.#mimeType}`);
         } catch (error) {
-            console.error('[CottonMediaHandler] Erro ao criar elemento:', error);
+            console.error('[CottonMediaHandler] Error creating element:', error);
             this.#emit('error', error);
             this.#showErrorModal(error.message);
             throw error;
@@ -82,7 +82,7 @@ export class CottonMediaHandler {
     }
 
     /**
-     * Métodos privados para criação de Vídeo/Áudio (DRY)
+     * Private methods for Video/Audio creation (DRY)
      * @private
      */
     async #createPlayerElement(tagName) {
@@ -94,7 +94,7 @@ export class CottonMediaHandler {
         element.autoplay = this.#options.autoPlay;
         element.loop = this.#options.loop;
         element.muted = this.#options.muted;
-        element.crossOrigin = 'anonymous'; // Previne problemas de CORS em gravações/canvas
+        element.crossOrigin = 'anonymous'; // Prevents CORS issues in recordings/canvas
 
         if (isVideo) {
             element.style.width = '100%';
@@ -102,19 +102,19 @@ export class CottonMediaHandler {
             element.style.maxHeight = '100%';
         }
 
-        // Adicionar source
+        // Add source
         const source = document.createElement('source');
         source.src = await this.#getMediaUrl();
         source.type = this.#mimeType;
         element.appendChild(source);
 
-        // Fallback seguro usando nó de texto
+        // Safe fallback using text node
         const fallbackText = document.createTextNode(
-            `Seu navegador não suporta o elemento ${tagName}.`
+            `Your browser does not support the ${tagName} element.`
         );
         element.appendChild(fallbackText);
 
-        // Event Listeners unificados
+        // Unified event listeners
         this.#bindMediaEvents(element, isVideo);
 
         this.#mediaElement = element;
@@ -122,7 +122,7 @@ export class CottonMediaHandler {
     }
 
     /**
-     * Registra os eventos no elemento de mídia HTML5
+     * Registers events on the HTML5 media element
      * @private
      */
     #bindMediaEvents(element, isVideo) {
@@ -149,8 +149,8 @@ export class CottonMediaHandler {
         });
 
         element.addEventListener('error', (e) => {
-            console.error(`[CottonMediaHandler] Erro na mídia (${element.tagName}):`, e);
-            this.#emit('error', new Error(`Erro ao reproduzir ${element.tagName.toLowerCase()}`));
+            console.error(`[CottonMediaHandler] Media error (${element.tagName}):`, e);
+            this.#emit('error', new Error(`Error playing ${element.tagName.toLowerCase()}`));
         });
 
         element.addEventListener('loadedmetadata', () => {
@@ -164,7 +164,7 @@ export class CottonMediaHandler {
     }
 
     /**
-     * Cria elemento de imagem
+     * Creates image element
      * @private
      */
     async #createImageElement() {
@@ -185,8 +185,8 @@ export class CottonMediaHandler {
         });
 
         img.addEventListener('error', (e) => {
-            console.error('[CottonMediaHandler] Erro ao carregar imagem:', e);
-            this.#emit('error', new Error('Erro ao carregar imagem'));
+            console.error('[CottonMediaHandler] Error loading image:', e);
+            this.#emit('error', new Error('Error loading image'));
         });
 
         this.#mediaElement = img;
@@ -194,7 +194,7 @@ export class CottonMediaHandler {
     }
 
     /**
-     * Obtém URL de mídia com qualidade apropriada
+     * Gets media URL with appropriate quality
      * @private
      */
     async #getMediaUrl() {
@@ -212,7 +212,7 @@ export class CottonMediaHandler {
     }
 
     /**
-     * Determina qualidade ideal baseada na conexão do usuário
+     * Determines ideal quality based on user connection
      * @private
      */
     #determineQuality() {
@@ -232,8 +232,8 @@ export class CottonMediaHandler {
     }
 
     /**
-     * Obtém thumbnail da mídia
-     * @returns {Promise<string>} URL do thumbnail
+     * Gets media thumbnail
+     * @returns {Promise<string>} Thumbnail URL
      */
     async getThumbnail() {
         try {
@@ -243,23 +243,23 @@ export class CottonMediaHandler {
             const basePath = typeof Joomla !== 'undefined' && Joomla.getOptions ? Joomla.getOptions('system.paths').rootFull : '';
             return `${basePath}index.php?option=com_cotton&task=cotton.thumbnail&file_id=${this.#fileId}&size=medium`;
         } catch (error) {
-            console.error('[CottonMediaHandler] Erro ao obter thumbnail:', error);
+            console.error('[CottonMediaHandler] Error getting thumbnail:', error);
             return null;
         }
     }
 
     /**
-     * Extrai frames de vídeo em background sem afetar a reprodução do usuário
-     * @param {number} timestamp - Tempo em segundos
-     * @param {number} [timeoutMs=5000] - Limite de tempo de espera em milissegundos
+     * Extracts video frames in background without affecting playback
+     * @param {number} timestamp - Time in seconds
+     * @param {number} [timeoutMs=5000] - Timeout limit in milliseconds
      * @returns {Promise<Blob>}
      */
     async extractFrame(timestamp, timeoutMs = 5000) {
         if (!this.#mimeType.startsWith('video/')) {
-            throw new Error('Operação só disponível para vídeos');
+            throw new Error('Operation only available for videos');
         }
 
-        // Utiliza um elemento offscreen para não interferir na reprodução atual
+        // Uses an offscreen element to avoid interfering with current playback
         const tempVideo = document.createElement('video');
         tempVideo.crossOrigin = 'anonymous';
         tempVideo.src = await this.#getMediaUrl();
@@ -289,7 +289,7 @@ export class CottonMediaHandler {
                         if (blob) {
                             resolve(blob);
                         } else {
-                            reject(new Error('Falha ao gerar Blob do canvas'));
+                            reject(new Error('Failed to generate canvas Blob'));
                         }
                     }, 'image/png');
                 } catch (err) {
@@ -300,12 +300,12 @@ export class CottonMediaHandler {
 
             const onError = (e) => {
                 cleanup();
-                reject(new Error('Erro ao carregar mídia para extração de frame.'));
+                reject(new Error('Error loading media for frame extraction.'));
             };
 
             timer = setTimeout(() => {
                 cleanup();
-                reject(new Error('Tempo limite excedido ao buscar frame do vídeo'));
+                reject(new Error('Timeout exceeded while fetching video frame'));
             }, timeoutMs);
 
             tempVideo.addEventListener('seeked', onSeeked);
@@ -315,7 +315,7 @@ export class CottonMediaHandler {
     }
 
     /**
-     * Obtém duração da mídia
+     * Gets media duration
      * @returns {number}
      */
     getDuration() {
@@ -323,7 +323,7 @@ export class CottonMediaHandler {
     }
 
     /**
-     * Obtém tempo atual de reprodução
+     * Gets current playback time
      * @returns {number}
      */
     getCurrentTime() {
@@ -331,7 +331,7 @@ export class CottonMediaHandler {
     }
 
     /**
-     * Define tempo atual de reprodução
+     * Sets current playback time
      * @param {number} time
      */
     setCurrentTime(time) {
@@ -341,7 +341,7 @@ export class CottonMediaHandler {
     }
 
     /**
-     * Reproduz mídia
+     * Plays media
      * @returns {Promise<void>}
      */
     async play() {
@@ -351,7 +351,7 @@ export class CottonMediaHandler {
     }
 
     /**
-     * Pausa mídia
+     * Pauses media
      */
     pause() {
         if (this.#mediaElement?.pause) {
@@ -360,7 +360,7 @@ export class CottonMediaHandler {
     }
 
     /**
-     * Define volume (0-1)
+     * Sets volume (0-1)
      * @param {number} volume
      */
     setVolume(volume) {
@@ -370,7 +370,7 @@ export class CottonMediaHandler {
     }
 
     /**
-     * Verifica se está em streaming
+     * Checks if streaming
      * @returns {boolean}
      */
     isStreaming() {
@@ -378,7 +378,7 @@ export class CottonMediaHandler {
     }
 
     /**
-     * Emite evento customizado
+     * Emits custom event
      * @private
      */
     #emit(event, data) {
@@ -387,7 +387,7 @@ export class CottonMediaHandler {
                 try {
                     callback(data);
                 } catch (err) {
-                    console.error(`[CottonMediaHandler] Erro em listener de '${event}':`, err);
+                    console.error(`[CottonMediaHandler] Error in '${event}' listener:`, err);
                 }
             });
         }
@@ -395,7 +395,7 @@ export class CottonMediaHandler {
 
     #showErrorModal(message) {
         const errorModal = new CottonModal({
-            title: 'Erro',
+            title: 'Error',
             icon: 'icon-cancel',
             width: '420px',
             height: '200px',
@@ -411,7 +411,7 @@ export class CottonMediaHandler {
     }
 
     /**
-     * Adiciona listener de evento
+     * Adds event listener
      * @param {string} event
      * @param {Function} callback
      */
@@ -424,7 +424,7 @@ export class CottonMediaHandler {
     }
 
     /**
-     * Remove listener de evento
+     * Removes event listener
      * @param {string} event
      * @param {Function} callback
      */
@@ -435,7 +435,7 @@ export class CottonMediaHandler {
     }
 
     /**
-     * Destrói a instância e limpa recursos
+     * Destroys the instance and cleans up resources
      */
     destroy() {
         if (this.#mediaElement) {

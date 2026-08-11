@@ -12,6 +12,7 @@ namespace Tabaoca\Component\Shuttle\Site\Controller;
 
 use Joomla\CMS\MVC\Controller\BaseController;
 use Joomla\CMS\Factory;
+use Joomla\CMS\Language\Text;
 use Joomla\CMS\Session\Session;
 use Joomla\CMS\Response\JsonResponse;
 use Tabaoca\Component\Shuttle\Site\Model\Service\CommandInterpreter;
@@ -41,9 +42,11 @@ class ShuttleController extends BaseController {
 		try {
 
 			$app = Factory::getApplication();
-			if (!Session::checkToken()) {
-				echo new JsonResponse(null, 'Invalid token', true);
-				$app->close();
+			$currentuser = $app->getIdentity();
+			
+			if (!$currentuser->get("id") || !Session::checkToken()) {
+				echo new JsonResponse(null, Text::_('JINVALID_TOKEN'), true);
+				return;
 			}
 
 			$input = $app->input;
@@ -106,10 +109,11 @@ class ShuttleController extends BaseController {
 		try {
 			$app = Factory::getApplication();
 			$input = $app->input;
-
-			if (!Session::checkToken()) {
-				echo new JsonResponse(null, 'Invalid token', true);
-				$app->close();
+			$currentuser = $app->getIdentity();
+			
+			if (!$currentuser->get("id") || !Session::checkToken()) {
+				echo new JsonResponse(null, Text::_('JINVALID_TOKEN'), true);
+				return;
 			}
 
 			if (strtoupper($app->input->getMethod()) !== 'POST') {

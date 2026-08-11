@@ -5,6 +5,16 @@
  * @license GNU/AGPL v3 https://www.gnu.org/licenses/agpl-3.0.html
  */
 
+/**
+ * CottonTabs - Tab management for the Cotton UI
+ *
+ * Provides a tabbed interface with support for:
+ * - Creating, switching, and closing tabs
+ * - Dirty state tracking for unsaved changes
+ * - Custom tab icons and pane rendering
+ * - Event emission for tab lifecycle hooks
+ */
+
 const escapeHtml = (typeof CottonHelper !== 'undefined' && CottonHelper.escapeHtml)
     ? CottonHelper.escapeHtml.bind(CottonHelper)
     : (text) => text;
@@ -18,7 +28,19 @@ export class CottonTabs {
     #tabsContainer = null;
     #panesContainer = null;
 
-    constructor(tabsContainer, panesContainer, options = {}) {
+     /**
+      * Creates a new tabs manager instance.
+      * @param {string|HTMLElement} tabsContainer - Tabs container selector or element
+      * @param {string|HTMLElement} panesContainer - Panes container selector or element
+      * @param {Object} [options={}] - Configuration options
+      * @param {Function} [options.onTabChange] - Callback when active tab changes
+      * @param {Function} [options.onTabClose] - Callback when a tab is closed
+      * @param {Function} [options.onTabCreate] - Callback when a tab is created
+      * @param {Function} [options.renderTab] - Custom tab renderer
+      * @param {Function} [options.createPane] - Custom pane renderer
+      * @param {Function} [options.getTabIcon] - Custom tab icon getter
+      */
+     constructor(tabsContainer, panesContainer, options = {}) {
         this.#tabsContainer = typeof tabsContainer === 'string'
             ? document.querySelector(tabsContainer)
             : tabsContainer;
@@ -27,7 +49,7 @@ export class CottonTabs {
             : panesContainer;
 
         if (!this.#tabsContainer) {
-            throw new Error('[CottonTabs] Container de abas não encontrado');
+            throw new Error('[CottonTabs] Tabs container not found');
         }
 
         this.#options = {
@@ -43,7 +65,17 @@ export class CottonTabs {
         this.#attachEventListeners();
     }
 
-    addTab(tabData) {
+     /**
+      * Adds a new tab.
+      * @param {Object} tabData - Tab data
+      * @param {string|number} [tabData.id] - Tab ID
+      * @param {string} [tabData.title] - Tab title
+      * @param {string} [tabData.name] - Tab name (fallback for title)
+      * @param {string} [tabData.content] - Tab content HTML
+      * @param {boolean} [tabData.dirty] - Whether the tab has unsaved changes
+      * @returns {string|number} Tab ID
+      */
+     addTab(tabData) {
         const tabId = tabData.id || this.#nextTabId++;
         const tab = {
             id: tabId,
@@ -71,7 +103,11 @@ export class CottonTabs {
         return tab.id;
     }
 
-    switchToTab(tabId) {
+     /**
+      * Switches to the specified tab.
+      * @param {string|number} tabId - Tab ID to activate
+      */
+     switchToTab(tabId) {
         const tab = this.#tabs.find(t => t.id === tabId);
         if (!tab) return;
 
@@ -88,7 +124,11 @@ export class CottonTabs {
         }
     }
 
-    async closeTab(tabId) {
+     /**
+      * Closes the specified tab.
+      * @param {string|number} tabId - Tab ID to close
+      */
+     async closeTab(tabId) {
         const index = this.#tabs.findIndex(t => t.id === tabId);
         if (index === -1) return;
 
@@ -119,7 +159,12 @@ export class CottonTabs {
         this.#scrollToEnd();
     }
 
-    updateTab(tabId, data) {
+     /**
+      * Updates tab data by ID.
+      * @param {string|number} tabId - Tab ID
+      * @param {Object} data - Data to merge into the tab
+      */
+     updateTab(tabId, data) {
         const tab = this.#tabs.find(t => t.id === tabId);
         if (!tab) return;
 
@@ -128,7 +173,12 @@ export class CottonTabs {
         this.#emit('tab:update', tab);
     }
 
-    setDirty(tabId, dirty) {
+     /**
+      * Sets the dirty state for a tab.
+      * @param {string|number} tabId - Tab ID
+      * @param {boolean} dirty - Whether the tab has unsaved changes
+      */
+     setDirty(tabId, dirty) {
         const tab = this.#tabs.find(t => t.id === tabId);
         if (tab) {
             tab.dirty = dirty;
@@ -136,31 +186,62 @@ export class CottonTabs {
         }
     }
 
-    getActiveTab() {
+     /**
+      * Gets the currently active tab.
+      * @returns {Object|null} Active tab object
+      */
+     getActiveTab() {
         return this.#activeTabId ? this.getTabById(this.#activeTabId) : null;
     }
 
-    getTabById(tabId) {
+     /**
+      * Gets a tab by its ID.
+      * @param {string|number} tabId - Tab ID
+      * @returns {Object|undefined} Tab object
+      */
+     getTabById(tabId) {
         return this.#tabs.find(t => t.id === tabId);
     }
 
-    getTabs() {
+     /**
+      * Gets all registered tabs.
+      * @returns {Object[]} Array of tab objects
+      */
+     getTabs() {
         return [...this.#tabs];
     }
 
-    getTabsContainer() {
+     /**
+      * Gets the tabs container element.
+      * @returns {HTMLElement|null} Tabs container element
+      */
+     getTabsContainer() {
         return this.#tabsContainer;
     }
 
-    getPanesContainer() {
+     /**
+      * Gets the panes container element.
+      * @returns {HTMLElement|null} Panes container element
+      */
+     getPanesContainer() {
         return this.#panesContainer;
     }
 
-    getPaneElement(tabId) {
+     /**
+      * Gets the pane element for a specific tab.
+      * @param {string|number} tabId - Tab ID
+      * @returns {HTMLElement|null} Pane element
+      */
+     getPaneElement(tabId) {
         return this.#panesContainer?.querySelector(`[data-tab-id="${tabId}"]`);
     }
 
-    #createTabElement(tab) {
+     /**
+      * Creates the DOM element for a tab.
+      * @param {Object} tab - Tab object
+      * @private
+      */
+     #createTabElement(tab) {
         const name = tab.name || tab.title || 'Untitled';
         const truncatedTitle = CottonHelper.truncateName(name, 18);
 
@@ -189,14 +270,24 @@ export class CottonTabs {
         tab.tabElement = tabElement;
     }
 
-    #removeTabElement(tab) {
+     /**
+      * Removes the DOM element for a tab.
+      * @param {Object} tab - Tab object
+      * @private
+      */
+     #removeTabElement(tab) {
         if (tab.tabElement?.parentElement) {
             tab.tabElement.remove();
         }
         delete tab.tabElement;
     }
 
-    #createPaneElement(tab) {
+     /**
+      * Creates the DOM element for a tab pane.
+      * @param {Object} tab - Tab object
+      * @private
+      */
+     #createPaneElement(tab) {
         if (this.#panesContainer && this.#options.createPane) {
             const paneElement = this.#options.createPane(tab);
             if (paneElement) {
@@ -206,14 +297,23 @@ export class CottonTabs {
         }
     }
 
-    #removePaneElement(tab) {
+     /**
+      * Removes the DOM element for a tab pane.
+      * @param {Object} tab - Tab object
+      * @private
+      */
+     #removePaneElement(tab) {
         if (tab.paneElement?.parentElement) {
             tab.paneElement.remove();
         }
         delete tab.paneElement;
     }
 
-    #showActivePane() {
+     /**
+      * Shows the active tab pane and hides others.
+      * @private
+      */
+     #showActivePane() {
         if (!this.#panesContainer) return;
 
         this.#panesContainer.querySelectorAll('.cotton-pane').forEach(pane => {
@@ -238,7 +338,11 @@ export class CottonTabs {
         }
     }
 
-    #renderTabs() {
+     /**
+      * Re-renders all tab elements in the tabs container.
+      * @private
+      */
+     #renderTabs() {
         if (!this.#tabsContainer) return;
 
         this.#tabsContainer.innerHTML = '';
@@ -252,7 +356,11 @@ export class CottonTabs {
         });
     }
 
-    #scrollToEnd() {
+     /**
+      * Scrolls the tabs container to the end.
+      * @private
+      */
+     #scrollToEnd() {
         if (!this.#tabsContainer) return;
         requestAnimationFrame(() => {
             this.#tabsContainer.scrollTo({
@@ -262,7 +370,12 @@ export class CottonTabs {
         });
     }
 
-    #scrollTabIntoView(tabId) {
+     /**
+      * Scrolls a specific tab into view within the tabs container.
+      * @param {string|number} tabId - Tab ID to scroll into view
+      * @private
+      */
+     #scrollTabIntoView(tabId) {
         if (!this.#tabsContainer) return;
 
         requestAnimationFrame(() => {
@@ -291,7 +404,11 @@ export class CottonTabs {
         });
     }
 
-    #attachEventListeners() {
+     /**
+      * Attaches click event listeners to the tabs container.
+      * @private
+      */
+     #attachEventListeners() {
         this.#tabsContainer.addEventListener('click', (event) => {
             const tabTitle = event.target.closest('.cotton-tab-title');
             if (tabTitle) {
@@ -308,32 +425,51 @@ export class CottonTabs {
         });
     }
 
-    #emit(event, data) {
+     /**
+      * Emits a custom event to registered listeners.
+      * @param {string} event - Event name
+      * @param {*} data - Event data
+      * @private
+      */
+     #emit(event, data) {
         if (this.#listeners[event]) {
             this.#listeners[event].forEach(callback => {
                 try {
                     callback(data);
                 } catch (err) {
-                    console.error(`[CottonTabs] Erro no listener ${event}:`, err);
+                    console.error(`[CottonTabs] Error in listener ${event}:`, err);
                 }
             });
         }
     }
 
-    on(event, callback) {
+     /**
+      * Registers an event listener.
+      * @param {string} event - Event name
+      * @param {Function} callback - Callback function
+      */
+     on(event, callback) {
         if (!this.#listeners[event]) {
             this.#listeners[event] = [];
         }
         this.#listeners[event].push(callback);
     }
 
-    off(event, callback) {
+     /**
+      * Removes an event listener.
+      * @param {string} event - Event name
+      * @param {Function} callback - Callback function to remove
+      */
+     off(event, callback) {
         if (this.#listeners[event]) {
             this.#listeners[event] = this.#listeners[event].filter(cb => cb !== callback);
         }
     }
 
-    destroy() {
+     /**
+      * Destroys the tabs manager and cleans up DOM and listeners.
+      */
+     destroy() {
         this.#listeners = {};
         if (this.#tabsContainer) {
             this.#tabsContainer.innerHTML = '';

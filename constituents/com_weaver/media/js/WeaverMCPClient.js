@@ -8,11 +8,15 @@
 /**
  * Shuttle MCP Client
  *
- * Cliente MCP (Model Context Protocol) para comunicacao com o Shuttle MCP Server.
- * Transmite eventos SSE estruturados do backend para o frontend.
+ * MCP client for communication with the Shuttle MCP Server.
+ * Forwards structured SSE events from backend to frontend.
  */
 
 const WeaverMCPClient = (() => {
+	/**
+	 * Resolves the default base URL from Joomla config or current origin.
+	 * @returns {string} Base URL
+	 */
 	const DEFAULT_BASE_URL = () => {
 		const cfg = window.Joomla?.getOptions?.('cotton_config');
 		return cfg?.siteUrl || window.location.origin;
@@ -27,10 +31,18 @@ const WeaverMCPClient = (() => {
 	let initialized = false;
 	let csrfToken = '';
 
+	/**
+	 * Gets the current CSRF token.
+	 * @returns {string} CSRF token
+	 */
 	function getCsrfToken() {
 		return csrfToken || '';
 	}
 
+	/**
+	 * Initializes the MCP session and loads tools, resources, prompts, and models.
+	 * @returns {Promise<Object>} Initialization result
+	 */
 	async function connect() {
 		const initResponse = await sendRequest('initialize', {
 			protocolVersion: '2024-11-05',
@@ -66,6 +78,10 @@ const WeaverMCPClient = (() => {
 		};
 	}
 
+	/**
+	 * Resets the MCP session and reinitializes.
+	 * @returns {Promise<Object>} Initialization result
+	 */
 	async function reset() {
 		initialized = false;
 		sessionId = null;
@@ -76,6 +92,10 @@ const WeaverMCPClient = (() => {
 		return connect();
 	}
 
+	/**
+	 * Lists available tools from the MCP server.
+	 * @returns {Promise<Array>} Tools list
+	 */
 	async function listTools() {
 		const response = await sendRequest('tools/list', {});
 		if (response.data?.result) {
@@ -84,6 +104,10 @@ const WeaverMCPClient = (() => {
 		return tools;
 	}
 
+	/**
+	 * Lists available resources from the MCP server.
+	 * @returns {Promise<Array>} Resources list
+	 */
 	async function listResources() {
 		const response = await sendRequest('resources/list', {});
 		if (response.data?.result) {
@@ -92,6 +116,10 @@ const WeaverMCPClient = (() => {
 		return resources;
 	}
 
+	/**
+	 * Lists available prompts from the MCP server.
+	 * @returns {Promise<Array>} Prompts list
+	 */
 	async function listPrompts() {
 		const response = await sendRequest('prompts/list', {});
 		if (response.data?.result) {
@@ -100,6 +128,10 @@ const WeaverMCPClient = (() => {
 		return prompts;
 	}
 
+	/**
+	 * Lists available models from the MCP server.
+	 * @returns {Promise<Array>} Models list
+	 */
 	async function listModels() {
 		const response = await sendRequest('models/list', {});
 		if (response.data?.result) {
@@ -108,6 +140,12 @@ const WeaverMCPClient = (() => {
 		return models;
 	}
 
+	/**
+	 * Calls an MCP tool by name.
+	 * @param {string} name - Tool name
+	 * @param {Object} [args={}] - Tool arguments
+	 * @returns {Promise<Object>} Tool result
+	 */
 	async function callTool(name, args = {}) {
 		if (!initialized) {
 			await connect();
@@ -121,6 +159,11 @@ const WeaverMCPClient = (() => {
 		return parseToolResult(response);
 	}
 
+	/**
+	 * Reads an MCP resource by URI.
+	 * @param {string} uri - Resource URI
+	 * @returns {Promise<Object>} Resource result
+	 */
 	async function readResource(uri) {
 		if (!initialized) {
 			await connect();
@@ -137,6 +180,12 @@ const WeaverMCPClient = (() => {
 		return parseResourceResult(response);
 	}
 
+	/**
+	 * Resolves Weaver-specific MCP resources from the frontend state.
+	 * @param {string} uri - Resource URI
+	 * @returns {Object} Resolved resource data
+	 * @private
+	 */
 	function resolveWeaverResource(uri) {
 		const weaver = window.WeaverEditor || {};
 		const panels = window.WeaverMCPPanel || {};
@@ -243,6 +292,26 @@ const WeaverMCPClient = (() => {
 		};
 	}
 
+	/**
+	 * Executes an AI streaming request with callbacks for chunks, reasoning, tools, and completion.
+	 * @param {Object} args - Stream arguments
+	 * @param {string} args.prompt - User prompt
+	 * @param {string} args.model - Model identifier
+	 * @param {string} args.mode - Assistant mode
+	 * @param {Array} [args.tools] - Tool definitions
+	 * @param {Array} [args.resources] - Resource definitions
+	 * @param {Array} [args.prompts] - Prompt definitions
+	 * @param {Array} [args.conversation] - Conversation history
+	 * @param {Object} [callbacks={}] - Event callbacks
+	 * @param {Function} [callbacks.onChunk] - Called on text chunk
+	 * @param {Function} [callbacks.onReasoning] - Called on reasoning chunk
+	 * @param {Function} [callbacks.onToolCall] - Called on tool call
+	 * @param {Function} [callbacks.onToolResult] - Called on tool result
+	 * @param {Function} [callbacks.onDone] - Called when stream completes
+	 * @param {Function} [callbacks.onError] - Called on error
+	 * @param {AbortSignal} [callbacks.signal] - Abort signal
+	 * @returns {Promise<Object>} Stream result
+	 */
 	async function executeAiStream(args = {}, callbacks = {}) {
 		const prompt = args.prompt || '';
 		const model = args.model || '';
@@ -481,6 +550,12 @@ const WeaverMCPClient = (() => {
 		return finalResult;
 	}
 
+	/**
+	 * Sends a generic JSON-RPC request to the MCP backend.
+	 * @param {string} method - JSON-RPC method
+	 * @param {Object} [params={}] - Request params
+	 * @returns {Promise<Object>} Response payload
+	 */
 	async function sendRequest(method, params = {}) {
 		const payload = {
 			jsonrpc: '2.0',
@@ -547,6 +622,11 @@ const WeaverMCPClient = (() => {
 		}
 	}
 
+	/**
+	 * Parses a tool call response into a normalized result.
+	 * @param {Object} response - Raw response object
+	 * @returns {Object} Parsed tool result
+	 */
 	function parseToolResult(response) {
 		if (response.error) {
 			return {
@@ -578,6 +658,11 @@ const WeaverMCPClient = (() => {
 		};
 	}
 
+	/**
+	 * Parses a resource read response into a normalized result.
+	 * @param {Object} response - Raw response object
+	 * @returns {Object} Parsed resource result
+	 */
 	function parseResourceResult(response) {
 		if (response.error) {
 			return {
@@ -610,46 +695,90 @@ const WeaverMCPClient = (() => {
 		};
 	}
 
+	/**
+	 * Generates a unique request ID.
+	 * @returns {string} Unique ID
+	 */
 	function generateId() {
 		return Date.now().toString(36) + Math.random().toString(36).substring(2, 9);
 	}
 
+	/**
+	 * Gets the currently loaded tools.
+	 * @returns {Array} Tools
+	 */
 	function getTools() {
 		return tools;
 	}
 
+	/**
+	 * Gets the names of currently loaded tools.
+	 * @returns {string[]} Tool names
+	 */
 	function getToolNames() {
 		return tools.map(t => t.name);
 	}
 
+	/**
+	 * Gets the currently loaded resources.
+	 * @returns {Array} Resources
+	 */
 	function getResources() {
 		return resources;
 	}
 
+	/**
+	 * Gets the currently loaded prompts.
+	 * @returns {Array} Prompts
+	 */
 	function getPrompts() {
 		return prompts;
 	}
 
+	/**
+	 * Gets the currently loaded models.
+	 * @returns {Array} Models
+	 */
 	function getModels() {
 		return models;
 	}
 
+	/**
+	 * Gets the current MCP session ID.
+	 * @returns {string|null} Session ID
+	 */
 	function getSessionId() {
 		return sessionId;
 	}
 
+	/**
+	 * Checks if the MCP client is initialized.
+	 * @returns {boolean}
+	 */
 	function isInitialized() {
 		return initialized;
 	}
 
+	/**
+	 * Sets the API base URL.
+	 * @param {string} url - Base URL
+	 */
 	function setBaseUrl(url) {
 		baseUrl = url.replace(/\/$/, '');
 	}
 
+	/**
+	 * Sets the CSRF token for requests.
+	 * @param {string} token - CSRF token
+	 */
 	function setCsrfToken(token) {
 		csrfToken = typeof token === 'string' ? token.trim() : '';
 	}
 
+	/**
+	 * Gets the current API base URL.
+	 * @returns {string} Base URL
+	 */
 	function getBaseUrl() {
 		return baseUrl;
 	}

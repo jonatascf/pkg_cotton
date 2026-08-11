@@ -5,8 +5,11 @@
  * @license GNU/AGPL v3 https://www.gnu.org/licenses/agpl-3.0.html
  */
 
+/**
+ * CottonUXManager - UX enhancements for Cotton
+ * Adds dragging, resizing, drop-upload, and maximize/restore behavior.
+ */
 export class CottonUXManager {
-    #manager = null;
     #options = {};
     #draggables = new Map();
     #resizables = new Map();
@@ -19,23 +22,49 @@ export class CottonUXManager {
     #nextDraggableId = 1;
     #nextResizableId = 1;
     #nextDropUploadId = 1;
+    #manager = null;
 
-    constructor(manager = null, options = {}) {
-        this.#manager = manager;
-        this.#options = {
-            ...options
-        };
-    }
+     /**
+      * Creates a new UX manager instance.
+      * @param {CottonUIManager|null} manager - Parent UI manager
+      * @param {Object} [options={}] - Default options
+      */
+     constructor(manager = null, options = {}) {
+         this.#manager = manager;
+         this.#options = {
+             ...options
+         };
+     }
 
-    initialize() {
-        return this;
-    }
+     /**
+      * Initializes the manager.
+      * @returns {CottonUXManager}
+      */
+     initialize() {
+         return this;
+     }
 
-    addDraggable(options = {}) {
+     /**
+      * Adds a draggable behavior to an element.
+      * @param {Object} options
+      * @param {string|HTMLElement} [options.handle] - Drag handle element or selector
+      * @param {string|HTMLElement} [options.target] - Target element to drag or selector
+      * @param {string} [options.position='fixed'] - CSS positioning mode
+      * @param {string} [options.dragClass] - CSS class applied while dragging
+      * @param {string} [options.ignoreSelector] - Selector for ignored child elements
+      * @param {string} [options.root] - Root element for selector resolution
+      * @returns {string|null} Draggable ID
+      */
+     addDraggable(options = {}) {
         return this.#addDraggable(options);
     }
 
-    removeDraggable(id) {
+     /**
+      * Removes a draggable behavior by ID.
+      * @param {string} id
+      * @returns {CottonUXManager}
+      */
+     removeDraggable(id) {
         const state = this.#draggables.get(id);
 
         if (!state) {
@@ -58,11 +87,32 @@ export class CottonUXManager {
         return this;
     }
 
-    addResizable(options = {}) {
+     /**
+      * Adds a resizable behavior to an element.
+      * @param {Object} options
+      * @param {string|HTMLElement} [options.target] - Target element or selector
+      * @param {string[]} [options.edges=['right']] - Resizable edges: 'top', 'right', 'bottom', 'left'
+      * @param {number} [options.minWidth=160] - Minimum width in px
+      * @param {number} [options.maxWidth] - Maximum width in px
+      * @param {number} [options.minHeight=80] - Minimum height in px
+      * @param {number} [options.maxHeight] - Maximum height in px
+      * @param {number} [options.handleSize=8] - Handle size in px
+      * @param {string} [options.handleSide] - Handle side alignment
+      * @param {string} [options.position] - CSS positioning mode
+      * @param {string} [options.resizeClass] - CSS class applied while resizing
+      * @param {string} [options.root] - Root element for selector resolution
+      * @returns {string|null} Resizable ID
+      */
+     addResizable(options = {}) {
         return this.#addResizable(options);
     }
 
-    removeResizable(id) {
+     /**
+      * Removes a resizable behavior by ID.
+      * @param {string} id
+      * @returns {CottonUXManager}
+      */
+     removeResizable(id) {
         const state = this.#resizables.get(id);
 
         if (!state) {
@@ -82,11 +132,26 @@ export class CottonUXManager {
         return this;
     }
 
-    addDropUpload(options = {}) {
+     /**
+      * Adds drag-and-drop file upload behavior to a zone.
+      * @param {Object} options
+      * @param {string|HTMLElement} [options.dropZone] - Drop zone element or selector
+      * @param {CottonUIManager} [options.manager] - UI manager instance
+      * @param {boolean} [options.autoSubmit=true] - Auto-submit after drop
+      * @param {string} [options.dropActiveClass] - CSS class for active drop state
+      * @param {string} [options.root] - Root element for selector resolution
+      * @returns {string|null} Drop upload ID
+      */
+     addDropUpload(options = {}) {
         return this.#addDropUpload(options);
     }
 
-    removeDropUpload(id) {
+     /**
+      * Removes a drop-upload behavior by ID.
+      * @param {string} id
+      * @returns {CottonUXManager}
+      */
+     removeDropUpload(id) {
         const state = this.#dropUploads.get(id);
 
         if (!state) {
@@ -105,7 +170,11 @@ export class CottonUXManager {
         return this;
     }
 
-    enableHeaderDrag() {
+     /**
+      * Enables header dragging using the configured header selector.
+      * @returns {CottonUXManager}
+      */
+     enableHeaderDrag() {
         return this.addDraggable({
             handle: this.#options.headerSelector || null,
             target: this.#options.container || null,
@@ -113,20 +182,34 @@ export class CottonUXManager {
         });
     }
 
-    enableTreeResize() {
+     /**
+      * Enables tree resizing from the right edge.
+      * @returns {CottonUXManager}
+      */
+     enableTreeResize() {
         return this.addResizable({
             target: this.#options.target || null,
             edges: ['right']
         });
     }
 
-    enableDropUpload() {
+     /**
+      * Enables drag-and-drop upload on the configured drop zone.
+      * @returns {CottonUXManager}
+      */
+     enableDropUpload() {
         return this.addDropUpload({
             dropZone: this.#options.dropZone || null
         });
     }
 
-    maximize(container = null, options = {}) {
+     /**
+      * Maximizes the target element to fill the viewport.
+      * @param {string|HTMLElement} [container] - Element or selector to maximize
+      * @param {Object} [options] - Optional overrides
+      * @returns {CottonUXManager}
+      */
+     maximize(container = null, options = {}) {
         const target = this.#resolveElement(container || this.#options.container, this.#options.root || document);
 
         if (!target || this.#maximized) {
@@ -166,12 +249,17 @@ export class CottonUXManager {
         this.#maximizeResizeHandler = () => this.#applyMaximizeStyles(target);
         window.addEventListener('resize', this.#maximizeResizeHandler);
 
-        this.#notify('success', 'Cotton maximizado');
+        this.#notify('success', 'Cotton maximized');
 
         return this;
     }
 
-    restore(container = null) {
+     /**
+      * Restores a previously maximized element.
+      * @param {string|HTMLElement} [container] - Element or selector to restore
+      * @returns {CottonUXManager}
+      */
+     restore(container = null) {
         const target = this.#resolveElement(container || this.#options.container, this.#options.root || document);
 
         if (!target || !this.#maximized || !this.#maximizeState || this.#maximizeState.target !== target) {
@@ -196,12 +284,17 @@ export class CottonUXManager {
         this.#maximized = false;
         this.#updateAllMaximizeIcons();
 
-        this.#notify('success', 'Cotton restaurado');
+        this.#notify('success', 'Cotton restored');
 
         return this;
     }
 
-    toggleMaximize(container = null) {
+     /**
+      * Toggles maximize/restore for the target element.
+      * @param {string|HTMLElement} [container] - Element or selector
+      * @returns {CottonUXManager}
+      */
+     toggleMaximize(container = null) {
         if (this.#maximized) {
             return this.restore(container);
         }
@@ -209,11 +302,19 @@ export class CottonUXManager {
         return this.maximize(container);
     }
 
-    isMaximized() {
+     /**
+      * Returns whether the target is currently maximized.
+      * @returns {boolean}
+      */
+     isMaximized() {
         return this.#maximized;
     }
 
-    destroyHeaderMaximize() {
+     /**
+      * Destroys header maximize bindings and restores state if needed.
+      * @returns {CottonUXManager}
+      */
+     destroyHeaderMaximize() {
         if (this.#maximizeTrigger && this.#maximizeHandler) {
             this.#maximizeTrigger.removeEventListener('click', this.#maximizeHandler);
         }
@@ -228,7 +329,11 @@ export class CottonUXManager {
         return this;
     }
 
-    destroy() {
+     /**
+      * Destroys all UX behaviors and cleans up listeners.
+      * @returns {CottonUXManager}
+      */
+     destroy() {
         this.destroyHeaderMaximize();
         Array.from(this.#draggables.keys()).forEach(id => this.removeDraggable(id));
         Array.from(this.#resizables.keys()).forEach(id => this.removeResizable(id));
@@ -237,8 +342,20 @@ export class CottonUXManager {
         return this;
     }
 
-    #addDraggable(options) {
-        const config = this.#normalizeDraggableOptions(options);
+     /**
+      * Registers a new draggable behavior.
+      * @param {Object} options
+      * @param {string|HTMLElement} [options.handle] - Drag handle element or selector
+      * @param {string|HTMLElement} [options.target] - Target element to drag or selector
+      * @param {string} [options.position='fixed'] - CSS positioning mode
+      * @param {string} [options.dragClass] - CSS class applied while dragging
+      * @param {string} [options.ignoreSelector] - Selector for ignored child elements
+      * @param {string} [options.root] - Root element for selector resolution
+      * @returns {string|null} Draggable ID
+      * @private
+      */
+     #addDraggable(options) {
+         const config = this.#normalizeDraggableOptions(options);
 
         if (this.#draggables.has(config.id)) {
             this.removeDraggable(config.id);
@@ -274,8 +391,14 @@ export class CottonUXManager {
         return config.id;
     }
 
-    #normalizeDraggableOptions(options) {
-        const root = this.#resolveRoot(options.root || this.#options.root || document);
+     /**
+      * Normalizes draggable options and merges defaults.
+      * @param {Object} options
+      * @returns {Object} Normalized config
+      * @private
+      */
+     #normalizeDraggableOptions(options) {
+         const root = this.#resolveRoot(options.root || this.#options.root || document);
 
         return {
             id: options.id || `cotton-drag-${this.#nextDraggableId++}`,
@@ -288,7 +411,13 @@ export class CottonUXManager {
         };
     }
 
-    #startDraggable(state, event) {
+     /**
+      * Starts drag interaction on pointer down.
+      * @param {Object} state - Draggable state
+      * @param {Event} event - Pointer event
+      * @private
+      */
+     #startDraggable(state, event) {
         if (!this.#isPrimaryButton(event) || this.#isIgnoredTarget(event.target, state.config)) {
             return;
         }
@@ -330,7 +459,13 @@ export class CottonUXManager {
         document.addEventListener('touchcancel', state.handlers.touchEnd);
     }
 
-    #moveDraggable(state, event) {
+     /**
+      * Moves draggable element on pointer move.
+      * @param {Object} state - Draggable state
+      * @param {Event} event - Pointer event
+      * @private
+      */
+     #moveDraggable(state, event) {
         if (!state.dragging) {
             return;
         }
@@ -345,7 +480,12 @@ export class CottonUXManager {
         state.target.style.top = `${point.y - state.dragging.offsetY}px`;
     }
 
-    #endDraggable(state) {
+     /**
+      * Ends drag interaction on pointer up.
+      * @param {Object} state - Draggable state
+      * @private
+      */
+     #endDraggable(state) {
         if (!state.dragging) {
             return;
         }
@@ -360,8 +500,25 @@ export class CottonUXManager {
         document.removeEventListener('touchcancel', state.handlers.touchEnd);
     }
 
-    #addResizable(options) {
-        const config = this.#normalizeResizableOptions(options);
+     /**
+      * Registers a new resizable behavior.
+      * @param {Object} options
+      * @param {string|HTMLElement} [options.target] - Target element or selector
+      * @param {string[]} [options.edges=['right']] - Resizable edges
+      * @param {number} [options.minWidth=160] - Minimum width in px
+      * @param {number} [options.maxWidth] - Maximum width in px
+      * @param {number} [options.minHeight=80] - Minimum height in px
+      * @param {number} [options.maxHeight] - Maximum height in px
+      * @param {number} [options.handleSize=8] - Handle size in px
+      * @param {string} [options.handleSide] - Handle side alignment
+      * @param {string} [options.position] - CSS positioning mode
+      * @param {string} [options.resizeClass] - CSS class applied while resizing
+      * @param {string} [options.root] - Root element for selector resolution
+      * @returns {string|null} Resizable ID
+      * @private
+      */
+     #addResizable(options) {
+         const config = this.#normalizeResizableOptions(options);
 
         if (this.#resizables.has(config.id)) {
             this.removeResizable(config.id);
@@ -405,8 +562,14 @@ export class CottonUXManager {
         return config.id;
     }
 
-    #normalizeResizableOptions(options) {
-        const root = this.#resolveRoot(options.root || this.#options.root || document);
+     /**
+      * Normalizes resizable options and merges defaults.
+      * @param {Object} options
+      * @returns {Object} Normalized config
+      * @private
+      */
+     #normalizeResizableOptions(options) {
+         const root = this.#resolveRoot(options.root || this.#options.root || document);
 
         return {
             id: options.id || `cotton-resize-${this.#nextResizableId++}`,
@@ -424,7 +587,15 @@ export class CottonUXManager {
         };
     }
 
-    #appendResizeHandle(state, type, edges, cursor) {
+     /**
+      * Appends a resize handle element to the target.
+      * @param {Object} state - Resizable state
+      * @param {string} type - Handle type
+      * @param {string[]} edges - Associated edges
+      * @param {string|null} cursor - Cursor style
+      * @private
+      */
+     #appendResizeHandle(state, type, edges, cursor) {
         const handle = document.createElement('div');
         const size = state.config.handleSize;
         const handleId = `${type}-${edges.join('-')}`;
@@ -463,7 +634,15 @@ export class CottonUXManager {
         state.target.appendChild(handle);
     }
 
-    #applyResizeHandleSide(handle, type, size, side) {
+     /**
+      * Adjusts resize handle position when handleSide is set.
+      * @param {HTMLElement} handle - Handle element
+      * @param {string} type - Handle type
+      * @param {number} size - Handle size in px
+      * @param {string|null} side - Side alignment
+      * @private
+      */
+     #applyResizeHandleSide(handle, type, size, side) {
         if (!side || !['top', 'right', 'bottom', 'left'].includes(type)) {
             return;
         }
@@ -494,7 +673,14 @@ export class CottonUXManager {
         }
     }
 
-    #positionResizeHandle(handle, type, size) {
+     /**
+      * Positions a resize handle based on its type.
+      * @param {HTMLElement} handle - Handle element
+      * @param {string} type - Handle type or corner
+      * @param {number} size - Handle size in px
+      * @private
+      */
+     #positionResizeHandle(handle, type, size) {
         const half = `${size / -2}px`;
 
         if (type === 'top') {
@@ -560,7 +746,12 @@ export class CottonUXManager {
         }
     }
 
-    #prepareResizableTarget(state) {
+     /**
+      * Prepares resizable target positioning before resize starts.
+      * @param {Object} state - Resizable state
+      * @private
+      */
+     #prepareResizableTarget(state) {
         if (!state.config.position || state.config.position === 'static') {
             return;
         }
@@ -581,7 +772,15 @@ export class CottonUXManager {
         state.target.style.height = `${rect.height}px`;
     }
 
-    #startResizable(state, event, edges, type) {
+     /**
+      * Starts resize interaction on pointer down.
+      * @param {Object} state - Resizable state
+      * @param {Event} event - Pointer event
+      * @param {string[]} edges - Active edges
+      * @param {string} type - Handle type
+      * @private
+      */
+     #startResizable(state, event, edges, type) {
         if (!this.#isPrimaryButton(event)) {
             return;
         }
@@ -619,7 +818,13 @@ export class CottonUXManager {
         document.addEventListener('touchcancel', state.handles.get(`${type}-${edges.join('-')}`).handlers.touchEnd);
     }
 
-    #moveResizable(state, event) {
+     /**
+      * Moves resizable element on pointer move.
+      * @param {Object} state - Resizable state
+      * @param {Event} event - Pointer event
+      * @private
+      */
+     #moveResizable(state, event) {
         if (!state.resizing) {
             return;
         }
@@ -690,7 +895,12 @@ export class CottonUXManager {
         }
     }
 
-    #endResizable(state) {
+     /**
+      * Ends resize interaction on pointer up.
+      * @param {Object} state - Resizable state
+      * @private
+      */
+     #endResizable(state) {
         if (!state.resizing) {
             return;
         }
@@ -707,8 +917,19 @@ export class CottonUXManager {
         });
     }
 
-    #addDropUpload(options) {
-        const config = this.#normalizeDropUploadOptions(options);
+     /**
+      * Registers a new drag-and-drop upload behavior.
+      * @param {Object} options
+      * @param {string|HTMLElement} [options.dropZone] - Drop zone element or selector
+      * @param {CottonUIManager} [options.manager] - UI manager instance
+      * @param {boolean} [options.autoSubmit=true] - Auto-submit after drop
+      * @param {string} [options.dropActiveClass] - CSS class for active drop state
+      * @param {string} [options.root] - Root element for selector resolution
+      * @returns {string|null} Drop upload ID
+      * @private
+      */
+     #addDropUpload(options) {
+         const config = this.#normalizeDropUploadOptions(options);
 
         if (this.#dropUploads.has(config.id)) {
             this.removeDropUpload(config.id);
@@ -744,8 +965,14 @@ export class CottonUXManager {
         return config.id;
     }
 
-    #normalizeDropUploadOptions(options) {
-        const root = this.#resolveRoot(options.root || this.#options.root || document);
+     /**
+      * Normalizes drop-upload options and merges defaults.
+      * @param {Object} options
+      * @returns {Object} Normalized config
+      * @private
+      */
+     #normalizeDropUploadOptions(options) {
+         const root = this.#resolveRoot(options.root || this.#options.root || document);
 
         return {
             id: options.id || `cotton-drop-${this.#nextDropUploadId++}`,
@@ -757,7 +984,13 @@ export class CottonUXManager {
         };
     }
 
-    #handleDropUploadDragEnter(state, event) {
+     /**
+      * Handles dragenter on the drop zone.
+      * @param {Object} state - Drop upload state
+      * @param {Event} event - Drag event
+      * @private
+      */
+     #handleDropUploadDragEnter(state, event) {
         event.preventDefault();
 
         if (event.dataTransfer) {
@@ -768,7 +1001,13 @@ export class CottonUXManager {
         this.#setDropActive(state, true);
     }
 
-    #handleDropUploadDragOver(state, event) {
+     /**
+      * Handles dragover on the drop zone.
+      * @param {Object} state - Drop upload state
+      * @param {Event} event - Drag event
+      * @private
+      */
+     #handleDropUploadDragOver(state, event) {
         event.preventDefault();
 
         if (event.dataTransfer) {
@@ -776,7 +1015,13 @@ export class CottonUXManager {
         }
     }
 
-    #handleDropUploadDragLeave(state, event) {
+     /**
+      * Handles dragleave on the drop zone.
+      * @param {Object} state - Drop upload state
+      * @param {Event} event - Drag event
+      * @private
+      */
+     #handleDropUploadDragLeave(state, event) {
         event.preventDefault();
 
         state.depth = Math.max(0, state.depth - 1);
@@ -786,7 +1031,13 @@ export class CottonUXManager {
         }
     }
 
-    #handleDropUploadDrop(state, event) {
+     /**
+      * Handles drop on the drop zone and starts upload.
+      * @param {Object} state - Drop upload state
+      * @param {Event} event - Drop event
+      * @private
+      */
+     #handleDropUploadDrop(state, event) {
         event.preventDefault();
 
         state.depth = 0;
@@ -807,7 +1058,13 @@ export class CottonUXManager {
             });
     }
 
-    #setDropActive(state, active) {
+     /**
+      * Toggles active drop-upload styling on the drop zone.
+      * @param {Object} state - Drop upload state
+      * @param {boolean} active - Whether drop is active
+      * @private
+      */
+     #setDropActive(state, active) {
         state.dropZone.classList.toggle(state.config.dropActiveClass, active);
 
         if (active) {
@@ -833,31 +1090,43 @@ export class CottonUXManager {
         state.dropZone.style.outlineOffset = '';
     }
 
-    async #uploadFilesThroughModal(files, config) {
+     /**
+      * Opens the upload modal through the manager for dropped files.
+      * @param {File[]} files - Dropped files
+      * @param {Object} config - Drop upload config
+      * @private
+      */
+     async #uploadFilesThroughModal(files, config) {
         const manager = config.manager || this.#manager;
 
         if (!manager) {
-            this.#notify('error', 'CottonUXManager: manager não configurado para upload por modal');
+            this.#notify('error', 'CottonUXManager: manager not configured for modal upload');
             return;
         }
 
         const folderId = this.#getActiveFolderId(manager);
 
         if (folderId < 0) {
-            this.#notify('error', 'Não é possível enviar arquivos na lixeira');
+            this.#notify('error', 'Cannot upload files to trash');
             return;
         }
 
         if (typeof manager.showUploadModal !== 'function') {
-            this.#notify('error', 'CottonUXManager: CottonUIManager.showUploadModal não está disponível');
+            this.#notify('error', 'CottonUXManager: CottonUIManager.showUploadModal is not available');
             return;
         }
 
         await manager.showUploadModal(files, config.autoSubmit);
     }
 
-    #normalizeEdges(edges) {
-        const allowed = ['top', 'right', 'bottom', 'left'];
+     /**
+      * Normalizes edge input into an array of allowed edge names.
+      * @param {string|string[]} edges - Edges input
+      * @returns {string[]} Normalized edges
+      * @private
+      */
+     #normalizeEdges(edges) {
+         const allowed = ['top', 'right', 'bottom', 'left'];
 
         if (!Array.isArray(edges)) {
             edges = String(edges || '').split(/[\s,]+/).filter(Boolean);
@@ -868,8 +1137,14 @@ export class CottonUXManager {
             .filter(edge => allowed.includes(edge));
     }
 
-    #getResizeCorners(edges) {
-        const corners = [];
+     /**
+      * Returns corner handle configs for the given edges.
+      * @param {string[]} edges - Active edges
+      * @returns {Array} Corner configurations
+      * @private
+      */
+     #getResizeCorners(edges) {
+         const corners = [];
 
         if (edges.includes('top') && edges.includes('right')) {
             corners.push({ type: 'top-right', edges: ['top', 'right'], cursor: 'nesw-resize' });
@@ -890,7 +1165,13 @@ export class CottonUXManager {
         return corners;
     }
 
-    #getEdgeCursor(edge) {
+     /**
+      * Returns the cursor style for a resize edge.
+      * @param {string} edge - Edge name
+      * @returns {string|null} Cursor CSS value
+      * @private
+      */
+     #getEdgeCursor(edge) {
         if (edge === 'top' || edge === 'bottom') {
             return 'ns-resize';
         }
@@ -902,7 +1183,15 @@ export class CottonUXManager {
         return null;
     }
 
-    #clampDimension(value, min, max) {
+     /**
+      * Clamps a dimension value between min and max.
+      * @param {number} value - Value to clamp
+      * @param {number} min - Minimum allowed value
+      * @param {number|null} max - Maximum allowed value
+      * @returns {number} Clamped value
+      * @private
+      */
+     #clampDimension(value, min, max) {
         const number = this.#toNumber(value, min);
         const minValue = this.#toNumber(min, 0);
         const maxValue = max === null || max === undefined || max === '' ? null : this.#toNumber(max, null);
@@ -915,7 +1204,13 @@ export class CottonUXManager {
         return clamped;
     }
 
-    #getActiveFolderId(manager) {
+     /**
+      * Gets the active folder ID from the manager.
+      * @param {CottonUIManager} manager - UI manager instance
+      * @returns {number} Active folder ID
+      * @private
+      */
+     #getActiveFolderId(manager) {
         if (manager && typeof manager.getActiveFolderId === 'function') {
             return parseInt(manager.getActiveFolderId() || '0', 10) || 0;
         }
@@ -923,7 +1218,12 @@ export class CottonUXManager {
         return 0;
     }
 
-    #applyMaximizeStyles(target) {
+     /**
+      * Applies full-viewport maximize styles to the target.
+      * @param {HTMLElement} target - Element to style
+      * @private
+      */
+     #applyMaximizeStyles(target) {
         if (typeof window === 'undefined') {
             return;
         }
@@ -939,7 +1239,11 @@ export class CottonUXManager {
         target.style.zIndex = '1050';
     }
 
-    #updateAllMaximizeIcons() {
+     /**
+      * Updates all maximize icons to reflect current maximize state.
+      * @private
+      */
+     #updateAllMaximizeIcons() {
         if (!this.#maximizeTrigger) {
             return;
         }
@@ -951,7 +1255,13 @@ export class CottonUXManager {
         });
     }
 
-    #updateMaximizeIcon(trigger, config) {
+     /**
+      * Updates a single maximize trigger icon/title.
+      * @param {HTMLElement} trigger - Trigger element
+      * @param {Object} config - Icon configuration
+      * @private
+      */
+     #updateMaximizeIcon(trigger, config) {
         if (!trigger) {
             return;
         }
@@ -968,19 +1278,32 @@ export class CottonUXManager {
         icon.classList.toggle(config.iconRestoreClass, this.#maximized);
 
         if (icon.tagName === 'I') {
-            icon.title = this.#maximized ? 'Restaurar' : 'Maximizar';
+            icon.title = this.#maximized ? 'Restore' : 'Maximize';
         }
 
         if (trigger.title || trigger.tagName === 'BUTTON' || trigger.tagName === 'DIV' || trigger.tagName === 'I') {
-            trigger.title = this.#maximized ? 'Restaurar' : 'Maximizar';
+            trigger.title = this.#maximized ? 'Restore' : 'Maximize';
         }
     }
 
-    #camelToKebab(value) {
-        return value.replace(/[A-Z]/g, match => `-${match.toLowerCase()}`);
-    }
+     /**
+      * Converts camelCase string to kebab-case.
+      * @param {string} value - camelCase input
+      * @returns {string} kebab-case output
+      * @private
+      */
+     #camelToKebab(value) {
+         return value.replace(/[A-Z]/g, match => `-${match.toLowerCase()}`);
+     }
 
-    #resolveElement(value, root) {
+     /**
+      * Resolves a selector, function, or element into an HTMLElement.
+      * @param {string|HTMLElement|Function|null} value - Input to resolve
+      * @param {string|HTMLElement|Window} [root] - Root for selector resolution
+      * @returns {HTMLElement|null} Resolved element
+      * @private
+      */
+     #resolveElement(value, root) {
         if (!value) {
             return null;
         }
@@ -1002,7 +1325,13 @@ export class CottonUXManager {
         return null;
     }
 
-    #resolveRoot(root) {
+     /**
+      * Resolves a root value into a document/element root.
+      * @param {string|HTMLElement|Window|null} root - Root input
+      * @returns {HTMLElement|null} Resolved root
+      * @private
+      */
+     #resolveRoot(root) {
         if (!root) {
             return typeof document !== 'undefined' ? document : null;
         }
@@ -1022,11 +1351,24 @@ export class CottonUXManager {
         return typeof document !== 'undefined' ? document : null;
     }
 
-    #isPrimaryButton(event) {
+     /**
+      * Checks if the event came from the primary button (left mouse or touch).
+      * @param {Event} event - Input event
+      * @returns {boolean}
+      * @private
+      */
+     #isPrimaryButton(event) {
         return event.type.startsWith('touch') || event.button === 0;
     }
 
-    #isIgnoredTarget(target, config) {
+     /**
+      * Checks if the event target matches the ignored selector.
+      * @param {Element|null} target - Event target
+      * @param {Object} config - Behavior config
+      * @returns {boolean}
+      * @private
+      */
+     #isIgnoredTarget(target, config) {
         if (!config.ignoreSelector || typeof Element === 'undefined' || !(target instanceof Element)) {
             return false;
         }
@@ -1034,7 +1376,13 @@ export class CottonUXManager {
         return Boolean(target.closest(config.ignoreSelector));
     }
 
-    #getPointerPoint(event) {
+     /**
+      * Extracts pointer coordinates from mouse or touch events.
+      * @param {Event} event - Input event
+      * @returns {{x: number, y: number}} Pointer coordinates
+      * @private
+      */
+     #getPointerPoint(event) {
         const source = event.touches?.[0] || event.changedTouches?.[0] || event;
 
         return {
@@ -1043,7 +1391,13 @@ export class CottonUXManager {
         };
     }
 
-    #getComputedStyle(element) {
+     /**
+      * Gets computed style for an element safely.
+      * @param {HTMLElement} element - Target element
+      * @returns {CSSStyleDeclaration} Computed style
+      * @private
+      */
+     #getComputedStyle(element) {
         if (typeof window === 'undefined' || typeof window.getComputedStyle !== 'function') {
             return { position: 'static' };
         }
@@ -1051,17 +1405,36 @@ export class CottonUXManager {
         return window.getComputedStyle(element);
     }
 
-    #toNumber(value, fallback) {
+     /**
+      * Converts a value to number or returns a fallback.
+      * @param {*} value - Value to convert
+      * @param {*} fallback - Fallback value
+      * @returns {number|*} Number or fallback
+      * @private
+      */
+     #toNumber(value, fallback) {
         const number = Number(value);
 
         return Number.isFinite(number) ? number : fallback;
     }
 
-    #isElement(value) {
+     /**
+      * Checks if a value is an Element instance.
+      * @param {*} value - Value to check
+      * @returns {boolean}
+      * @private
+      */
+     #isElement(value) {
         return typeof Element !== 'undefined' && value instanceof Element;
     }
 
-    #notify(type, message) {
+     /**
+      * Dispatches a UX status event and logs it.
+      * @param {'success'|'error'} type - Message type
+      * @param {string} message - Message content
+      * @private
+      */
+     #notify(type, message) {
         const detail = {
             type,
             message
@@ -1076,7 +1449,7 @@ export class CottonUXManager {
             return;
         }
 
-        console.log('[CottonUXManager]', message);
+        //console.log('[CottonUXManager]', message);
     }
 }
 

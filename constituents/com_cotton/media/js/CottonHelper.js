@@ -6,13 +6,13 @@
  */
 
 /**
- * CottonHelper - Utilitários para o Cotton Cloud
+ * CottonHelper - Cotton Cloud utilities
  * 
- * Fornece funções auxiliares para:
- * - Reconhecimento MIME e ícones visuais (FontAwesome)
- * - Formatação de tamanhos de arquivo
- * - Detecção de tipo de mídia
- * - Cores por categoria de arquivo
+ * Provides helper functions for:
+ * - MIME recognition and visual icons (FontAwesome)
+ * - File size formatting
+ * - Media type detection
+ * - Colors by file category
  * 
  * @class
  * @example
@@ -27,7 +27,7 @@
 export class CottonHelper {
 
     /**
-     * Mapa de tipos MIME para classes de ícone FontAwesome
+     * Map of MIME types to FontAwesome icon classes
      * @private
      * @type {Object}
      */
@@ -104,7 +104,7 @@ export class CottonHelper {
     };
 
     /**
-     * Mapa de extensões para tipos MIME (fallback)
+     * Map of extensions to MIME types (fallback)
      * @private
      * @type {Object}
      */
@@ -151,14 +151,14 @@ export class CottonHelper {
     };
 
     /**
-     * Retorna o HTML do ícone FontAwesome para um tipo MIME ou extensão.
+     * Returns the FontAwesome icon HTML for a MIME type or extension.
      * 
-     * @param {string} mimeTypeOrExt - Tipo MIME (ex: 'image/png') ou extensão (ex: 'png')
-     * @param {Object} options - Opções adicionais
-     *   @param {string} options.size - Tamanho FA: 'fa-xs', 'fa-sm', 'fa-lg', 'fa-xl', 'fa-2x'
-     *   @param {boolean} options.colored - Se deve aplicar cor (padrão: true)
-     *   @param {string} options.extraClass - Classes CSS adicionais
-     * @returns {string} HTML do ícone
+     * @param {string} mimeTypeOrExt - MIME type (ex: 'image/png') or extension (ex: 'png')
+     * @param {Object} options - Additional options
+     *   @param {string} options.size - FA size: 'fa-xs', 'fa-sm', 'fa-lg', 'fa-xl', 'fa-2x'
+     *   @param {boolean} options.colored - Whether to apply color (default: true)
+     *   @param {string} options.extraClass - Additional CSS classes
+     * @returns {string} Icon HTML
      */
     static getMimeIcon(mimeTypeOrExt, options = {}) {
         const { size = '', colored = true, extraClass = '' } = options;
@@ -173,30 +173,30 @@ export class CottonHelper {
     }
 
     /**
-     * Retorna apenas a classe do ícone FontAwesome para um tipo MIME.
+     * Returns only the FontAwesome icon class for a MIME type.
      * 
-     * @param {string} mimeTypeOrExt - Tipo MIME ou extensão
-     * @returns {string} Classe FontAwesome (ex: 'fa-regular fa-file-image')
+     * @param {string} mimeTypeOrExt - MIME type or extension
+     * @returns {string} FontAwesome class (ex: 'fa-regular fa-file-image')
      */
     static getMimeIconClass(mimeTypeOrExt) {
         return this.#resolveIconInfo(mimeTypeOrExt).icon;
     }
 
     /**
-     * Retorna a cor associada ao tipo MIME.
+     * Returns the color associated with the MIME type.
      * 
-     * @param {string} mimeTypeOrExt - Tipo MIME ou extensão
-     * @returns {string} Cor hexadecimal
+     * @param {string} mimeTypeOrExt - MIME type or extension
+     * @returns {string} Hexadecimal color
      */
     static getMimeColor(mimeTypeOrExt) {
         return this.#resolveIconInfo(mimeTypeOrExt).color;
     }
 
     /**
-     * Retorna a categoria do arquivo baseada no tipo MIME.
+     * Returns the file category based on MIME type.
      * 
-     * @param {string} mimeTypeOrExt - Tipo MIME ou extensão
-     * @returns {string} Categoria: 'folder', 'image', 'video', 'audio', 'pdf', 'text', 'code', 
+     * @param {string} mimeTypeOrExt - MIME type or extension
+     * @returns {string} Category: 'folder', 'image', 'video', 'audio', 'pdf', 'text', 'code', 
      *                   'document', 'spreadsheet', 'presentation', 'archive', 'unknown'
      */
     static getFileCategory(mimeTypeOrExt) {
@@ -204,9 +204,9 @@ export class CottonHelper {
     }
 
     /**
-     * Verifica se o tipo MIME é previewável no navegador.
+     * Checks if the MIME type is previewable in the browser.
      * 
-     * @param {string} mimeType - Tipo MIME
+     * @param {string} mimeType - MIME type
      * @returns {boolean}
      */
     static isPreviewable(mimeType) {
@@ -219,9 +219,9 @@ export class CottonHelper {
     }
 
     /**
-     * Verifica se o tipo MIME é editável no CodeMirror.
+     * Checks if the MIME type is editable in CodeMirror.
      * 
-     * @param {string} mimeType - Tipo MIME
+     * @param {string} mimeType - MIME type
      * @returns {boolean}
      */
     static isEditable(mimeType) {
@@ -235,9 +235,9 @@ export class CottonHelper {
     }
 
     /**
-     * Retorna o tipo de preview para um tipo MIME.
+     * Returns the preview type for a MIME type.
      * 
-     * @param {string} mimeType - Tipo MIME
+     * @param {string} mimeType - MIME type
      * @returns {string} 'image' | 'video' | 'audio' | 'pdf' | 'text' | 'none'
      */
     static getPreviewType(mimeType) {
@@ -252,10 +252,10 @@ export class CottonHelper {
     }
 
     /**
-     * Obtém a extensão de um nome de arquivo.
+     * Gets the extension from a file name.
      * 
-     * @param {string} fileName - Nome do arquivo
-     * @returns {string} Extensão em minúsculas (sem ponto)
+     * @param {string} fileName - File name
+     * @returns {string} Lowercase extension (without dot)
      */
     static getExtension(fileName) {
         if (!fileName) return '';
@@ -264,10 +264,10 @@ export class CottonHelper {
     }
 
     /**
-     * Converte extensão para tipo MIME.
+     * Converts extension to MIME type.
      * 
-     * @param {string} ext - Extensão do arquivo
-     * @returns {string} Tipo MIME ou 'application/octet-stream'
+     * @param {string} ext - File extension
+     * @returns {string} MIME type or 'application/octet-stream'
      */
     static extensionToMime(ext) {
         if (!ext) return 'application/octet-stream';
@@ -275,11 +275,11 @@ export class CottonHelper {
     }
 
     /**
-     * Formata tamanho de arquivo em formato legível.
+     * Formats file size into a readable format.
      * 
-     * @param {number} bytes - Tamanho em bytes
-     * @param {number} decimals - Casas decimais (padrão: 1)
-     * @returns {string} Tamanho formatado (ex: '2.5 MB')
+     * @param {number} bytes - Size in bytes
+     * @param {number} decimals - Decimal places (default: 1)
+     * @returns {string} Formatted size (ex: '2.5 MB')
      */
     static formatSize(bytes, decimals = 1) {
         if (bytes === 0 || bytes === null || bytes === undefined) return '0 B';
@@ -298,10 +298,10 @@ export class CottonHelper {
     }
 
     /**
-     * Formata data para exibição.
+     * Formats date for display.
      * 
-     * @param {string} dateStr - Data em formato ISO ou MySQL
-     * @returns {string} Data formatada
+     * @param {string} dateStr - Date in ISO or MySQL format
+     * @returns {string} Formatted date
      */
     static formatDate(dateStr) {
         if (!dateStr) return '';
@@ -320,10 +320,10 @@ export class CottonHelper {
     }
 
     /**
-     * Escapa caracteres HTML para prevenir XSS.
+     * Escapes HTML characters to prevent XSS.
      * 
-     * @param {string} text - Texto a escapar
-     * @returns {string} Texto escapado
+     * @param {string} text - Text to escape
+     * @returns {string} Escaped text
      */
     static escapeHtml(text) {
         if (!text) return '';
@@ -338,12 +338,12 @@ export class CottonHelper {
     }
 
     /**
-     * Trunca um nome de item quando excede o comprimento máximo,
-     * preservando a extensão do arquivo e os últimos 3 caracteres do nome base.
+     * Truncates an item name when it exceeds the maximum length,
+     * preserving the file extension and the last 3 characters of the base name.
      * 
-     * @param {string} name - Nome do item
-     * @param {number} maxLength - Comprimento máximo (padrão: 30)
-     * @returns {string} Nome truncado com reticências se necessário
+     * @param {string} name - Item name
+     * @param {number} maxLength - Maximum length (default: 30)
+     * @returns {string} Truncated name with ellipsis if needed
      */
     static truncateName(name, maxLength = 30) {
         const str = String(name ?? '');
@@ -362,9 +362,9 @@ export class CottonHelper {
     }
 
     /**
-     * Resolve informações do ícone a partir de MIME type ou extensão.
+     * Resolves icon information from MIME type or extension.
      * @private
-     * @param {string} input - Tipo MIME ou extensão
+     * @param {string} input - MIME type or extension
      * @returns {Object} { icon, color, category }
      */
     static #resolveIconInfo(input) {

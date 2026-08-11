@@ -14,7 +14,7 @@ use Joomla\CMS\Factory;
 use Joomla\CMS\Language\Text;
 
 /**
- * Gerencia regras de negócio para arquivos.
+ * Manages business rules for files.
  */
 class FileManager
 {
@@ -46,7 +46,7 @@ class FileManager
     }
 
     /**
-     * Detecta o tipo MIME a partir do nome do arquivo.
+     * Detects the MIME type from the file name.
      * @param string $fileName
      * @return string
      */
@@ -64,14 +64,14 @@ class FileManager
             'svg' => 'image/svg+xml',
             'bmp' => 'image/bmp',
             'ico' => 'image/x-icon',
-            // Vídeos
+            // Videos
             'mp4' => 'video/mp4',
             'webm' => 'video/webm',
             'ogg' => 'video/ogg',
             'avi' => 'video/avi',
             'mov' => 'video/quicktime',
             'mkv' => 'video/x-matroska',
-            // Áudio
+            // Audio
             'mp3' => 'audio/mpeg',
             'wav' => 'audio/wav',
             'flac' => 'audio/flac',
@@ -87,7 +87,7 @@ class FileManager
             'ods' => 'application/vnd.oasis.opendocument.spreadsheet',
             'ppt' => 'application/vnd.ms-powerpoint',
             'pptx' => 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-            // Código/Texto
+            // Code/Text
             'txt' => 'text/plain',
             'md' => 'text/markdown',
             'html' => 'text/html',

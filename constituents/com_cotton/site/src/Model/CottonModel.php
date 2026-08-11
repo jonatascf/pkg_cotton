@@ -248,6 +248,7 @@ class CottonModel extends BaseModel {
 		$data->files = array_values($files);
 		$data->folder_id = $folder_id;
         $data->path_folder = $folderRepo->getFolderPath((int) $folder_id, $user_id);
+		$data->limits = $this->limit_file_space();
 
 		$data->n = $data->n_folders + $data->n_files;
 
@@ -1225,20 +1226,32 @@ class CottonModel extends BaseModel {
 	*/
 	public function file_delete ($file_id, $folder_id, $trash) {
 
+		$currentuser = Factory::getApplication()->getIdentity();
+		$user_id = (int) $currentuser->get("id");
+
 		$del = $this->file_select($file_id);
+
+		if (!$del->n || (int) $del->file[0]->owner_id !== $user_id) {
+			$data->success = false;
+			$data->error = Text::_('COM_COTTON_ERROR_NOACCESS');
+			return $data;
+		}
 		
 		if ($del->n) {
 		
 			for ($p = 0; $p < $del->n; $p++) {
+				
+				if ((int) $del->file[$p]->owner_id !== $user_id) {
+			
+					if ($trash) {
+						
+						$this->folder_items_trash([$del->file[$p]], 'file', false);
 
-				if ($trash) {
-					
-					$this->folder_items_trash([$del->file[$p]], 'file', false);
+					} else {
 
-				} else {
+						$this->folder_items_delete([$del->file[$p]], 'file');
 
-					$this->folder_items_delete([$del->file[$p]], 'file');
-
+					}
 				}
 
 			}
@@ -1280,6 +1293,16 @@ class CottonModel extends BaseModel {
 		} else {
 
 			$data->limit_space = 0;
+
+		}
+
+		if (intval($config->get('cotton_max_file_size'))) {
+
+			$data->cotton_max_filesize = intval($config->get('cotton_max_file_size'));
+
+		} else {
+
+			$data->cotton_max_filesize = 0;
 
 		}
 
@@ -1330,24 +1353,6 @@ class CottonModel extends BaseModel {
 
 		}
 
-		//terminar mysql limit
-		/*$db = $this->getDatabase();
-		$db->setQuery("SHOW VARIABLES LIKE 'max_allowed_packet';");
-		$db->execute();
-
-		$n = $db->getNumRows();
-		$max_packet_mysql = $db->loadObjectList();
-
-		if ($n) {
-
-			$data->max_packet_mysql = intval($max_packet_mysql[0]->Value);
-
-		} else {
-
-			$data->max_packet_mysql = 0;
-
-		}*/
-
 		$val = trim(ini_get('upload_max_filesize'));
 		$last = strtolower($val[strlen($val)-1]);
 		$result = '';
@@ -1391,48 +1396,104 @@ class CottonModel extends BaseModel {
      *
      * @since   1.6
      */
-    public function open_editor($file_id, $file_ext) {
-		
-		$app = Factory::getApplication();
-		$app->getLanguage()->load('com_cotton', JPATH_SITE);
-
-        // Codemirror or Editor None should be enabled
-        $db    = $this->getDatabase();
-        $query = $db->getQuery(true);
-		
-		$query->select('COUNT(*) as state');
-		$query->from('#__extensions as a');
-		$query->where('(a.name =' . $db->quote('plg_editors_codemirror') . ' AND a.enabled = 1)');
+    public function open_editor($file_id, $file_ext = '') {
         
-		$db->setQuery($query);
+        $app = Factory::getApplication();
+        $app->getLanguage()->load('com_cotton', JPATH_SITE);
+
+        $currentuser = Factory::getApplication()->getIdentity();
+        $user_id = $currentuser->get("id");
+
+        $db = $this->getDatabase();
+        $query = $db->getQuery(true);
+        
+        $query->select('COUNT(*) as state');
+        $query->from('#__extensions as a');
+        $query->where('(a.name =' . $db->quote('plg_editors_codemirror') . ' AND a.enabled = 1)');
+        
+        $db->setQuery($query);
         $db->execute();
 
-		$n = $db->getNumRows();
-		$state = $db->loadObjectList();
+        $n = $db->getNumRows();
+        $state = $db->loadObjectList();
 
         $data = new \stdClass();
-		
-		if ($state[0]->state < 1) {
+        $data->file_id = $file_id;
+        $data->file_ext = $file_ext;
+        
+        if ($state[0]->state < 1) {
 
-            $data->file_id = $file_id;
-			$data->file_ext = $file_ext;
-			$data->success = false;
-			$data->error = Text::_('COM_COTTON_ERROR_EDITOR_DISABLED');
+            $data->success = false;
+            $data->error = Text::_('COM_COTTON_ERROR_EDITOR_DISABLED');
+            return $data;
 
-        } else {
-		
-			$file = $this->file_select_open($file_id);
+        }
 
-			$data->file_id = $file_id;
-			$data->file_ext = $file_ext;
-			$data->file_data = $file->file[0]->file_data;
-			$data->success = true;
-			$data->error = '';
+        $fileData = $this->file_select_open($file_id);
+        
+        if (!$fileData->n) {
 
-		}
+            $data->success = false;
+            $data->error = Text::_('COM_COTTON_ERROR_NOFILE');
+            return $data;
 
+        }
+
+        $file = $fileData->file[0];
+        $allowed = json_decode($file->allowed_users) ?: [];
+
+        $folderPath = '';
+        if (!empty($file->folder_id)) {
+            $folderRepo = new \Tabaoca\Component\Cotton\Site\Model\Folder\FolderRepository();
+            $folderPath = $folderRepo->getFolderPath((int) $file->folder_id, (int) $file->owner_id);
+        }
+
+        $accessGranted = ($file->owner_id == $user_id) || (in_array($user_id, $allowed));
+        if (!$accessGranted) {
+            switch (intval($file->open_link)) {
+                case 0:
+                    $data->success = false;
+                    $data->error = Text::_('COM_COTTON_ERROR_NOACCESS');
+                    return $data;
+                case 1:
+                    if (!$user_id) {
+                        $data->success = false;
+                        $data->error = Text::_('COM_COTTON_ERROR_NOACCESS');
+                        return $data;
+                    }
+                    break;
+                case 2:
+                    break;
+            }
+        }
+
+        $config = ComponentHelper::getParams('com_cotton');
+        $textFileTypes = $config->get('text_file_types', 'txt,php,html,css,js,json,xml,md');
+        $supportedExtensions = array_map('trim', explode(',', $textFileTypes));
+        $fileExt = strtolower(pathinfo($file->name, PATHINFO_EXTENSION));
+        if (!in_array($fileExt, $supportedExtensions)) {
+            $data->success = false;
+            $data->error = Text::sprintf('COM_COTTON_ERROR_FILE_TYPE_NOT_EDITABLE', $fileExt);
+            return $data;
+        }
+
+        return $this->buildOpenEditorSuccess($data, $file, $file_ext, $folderPath);
+    }
+
+    private function buildOpenEditorSuccess($data, $file, $file_ext, $folderPath) {
+        $data->content = $file->file_data;
+        $data->file_data = $file->file_data;
+        $data->name = $file->name;
+        $data->folder_id = $file->folder_id ?? 0;
+        $data->folder_path = $folderPath;
+        $data->open_link = $file->open_link ?? 0;
+        $data->size = strlen($file->file_data ?? '');
+        $data->created = $file->date_created ?? '';
+        $data->modified = $file->date_updated ?? '';
+        $data->file_ext = $file_ext ?: pathinfo($file->name, PATHINFO_EXTENSION);
+        $data->success = true;
+        $data->error = '';
         return $data;
-
     }
 
 	/**

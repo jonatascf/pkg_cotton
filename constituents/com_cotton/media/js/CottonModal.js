@@ -6,18 +6,18 @@
  */
 
 /**
- * CottonModal - Classe para criar modais no Cotton Cloud
+ * CottonModal - Class for creating modals in Cotton Cloud
  * 
- * Cria um modal com overlay semi-transparente, contendo:
- * - Header com título
- * - Body com formulário
- * - Footer com botões Cancelar e Enviar
+ * Creates a modal with semi-transparent overlay, containing:
+ * - Header with title
+ * - Body with form
+ * - Footer with Cancel and Submit buttons
  * 
  * @class
  * @example
  * const modal = new CottonModal({
- *     title: 'Criar Pasta',
- *     body: '<input type="text" name="folder_name" placeholder="Nome da pasta">',
+ *     title: 'Create Folder',
+ *     body: '<input type="text" name="folder_name" placeholder="Folder name">',
  *     onCancel: () => modal.close(),
  *     onSubmit: (data) => { console.log(data); modal.close(); }
  * });
@@ -32,28 +32,28 @@ export class CottonModal {
     #boundKeydownHandler = null;
 
     /**
-     * Construtor
-     * @param {Object} options - Opções do modal
-     *   @param {string} options.title - Título do modal
-     *   @param {string} options.icon - Icone do modal
-     *   @param {string} options.body - HTML do corpo do formulário
-     *   @param {Function} options.onCancel - Callback do botão Cancelar
-     *   @param {Function} options.onOpen - Callback ao abrir o modal
-     *   @param {Function} options.onSubmit - Callback do botão Enviar (antes da action)
-     *   @param {Function} options.onClose - Callback ao fechar (qualquer forma)
-     *   @param {Object} options.action - Configuração de ação AJAX
-     *     @param {string} options.action.url - URL da API
-     *     @param {string} options.action.method - Método HTTP (padrão: POST)
-     *     @param {Function} options.action.onSuccess - Callback em caso de sucesso (recebe response)
-     *     @param {Function} options.action.onError - Callback em caso de erro (recebe error)
-     *   @param {string} options.token - Nome do campo do token CSRF
-     *   @param {boolean} options.showFooter - Mostrar rodapé (padrão: true)
-     *   @param {boolean} options.showCancel - Mostrar botão Cancelar (padrão: true)
-     *   @param {boolean} options.showSubmit - Mostrar botão Enviar (padrão: true)
-     *   @param {string} options.cancelText - Texto do botão Cancelar (padrão: "Cancelar")
-     *   @param {string} options.submitText - Texto do botão Enviar (padrão: "Enviar")
-     *   @param {string} options.submitClass - Classe adicional do botão Enviar
-     *   @param {boolean} options.reloadOnSuccess - Recarregar página após sucesso (padrão: false)
+     * Constructor
+     * @param {Object} options - Modal options
+     *   @param {string} options.title - Modal title
+     *   @param {string} options.icon - Modal icon
+     *   @param {string} options.body - Form body HTML
+     *   @param {Function} options.onCancel - Cancel button callback
+     *   @param {Function} options.onOpen - Callback when opening the modal
+     *   @param {Function} options.onSubmit - Submit button callback (before action)
+     *   @param {Function} options.onClose - Callback when closing (any method)
+     *   @param {Object} options.action - AJAX action configuration
+     *     @param {string} options.action.url - API URL
+     *     @param {string} options.action.method - HTTP method (default: POST)
+     *     @param {Function} options.action.onSuccess - Success callback (receives response)
+     *     @param {Function} options.action.onError - Error callback (receives error)
+     *   @param {string} options.token - CSRF token field name
+     *   @param {boolean} options.showFooter - Show footer (default: true)
+     *   @param {boolean} options.showCancel - Show Cancel button (default: true)
+     *   @param {boolean} options.showSubmit - Show Submit button (default: true)
+     *   @param {string} options.cancelText - Cancel button text (default: "Cancel")
+     *   @param {string} options.submitText - Submit button text (default: "Submit")
+     *   @param {string} options.submitClass - Additional class for Submit button
+     *   @param {boolean} options.reloadOnSuccess - Reload page after success (default: false)
      */
     constructor(options = {}) {
         this.#options = {
@@ -71,8 +71,8 @@ export class CottonModal {
             showFooter: options.showFooter !== false,
             showCancel: options.showCancel !== false,
             showSubmit: options.showSubmit !== false,
-            cancelText: options.cancelText || 'Cancelar',
-            submitText: options.submitText || 'Enviar',
+            cancelText: options.cancelText || 'Cancel',
+            submitText: options.submitText || 'Submit',
             submitClass: options.submitClass || 'cotton-btn-primary',
             reloadOnSuccess: options.reloadOnSuccess || false,
             ...options
@@ -82,7 +82,7 @@ export class CottonModal {
     }
 
     /**
-     * Inicializa o modal
+     * Initializes the modal
      * @private
      */
     #init() {
@@ -98,7 +98,7 @@ export class CottonModal {
     }
 
     /**
-     * Constrói o HTML do modal
+     * Builds the modal HTML
      * @private
      * @returns {HTMLElement}
      */
@@ -117,7 +117,7 @@ export class CottonModal {
 
         const closeBtn = document.createElement('div');
         closeBtn.className = 'cotton-modal-close';
-        closeBtn.title = 'Fechar';
+        closeBtn.title = 'Close';
         closeBtn.innerHTML = `<i class="icon-remove"></i>`;
 
         header.append(title, closeBtn);
@@ -155,7 +155,7 @@ export class CottonModal {
     }
 
     /**
-     * Adiciona o corpo do modal
+     * Adds the modal body
      * @private
      * @param {HTMLElement} body
      */
@@ -173,7 +173,7 @@ export class CottonModal {
     }
 
     /**
-     * Escapa HTML para evitar XSS
+     * Escapes HTML to prevent XSS
      * @private
      * @param {string} text
      * @returns {string}
@@ -185,20 +185,20 @@ export class CottonModal {
     }
 
     /**
-     * Adiciona event listeners
+     * Adds event listeners
      * @private
      */
     #attachEvents() {
-        // Botão fechar (X)
+        // Close button (X)
         const closeBtn = this.#element.querySelector('.cotton-modal-close');
         closeBtn.addEventListener('click', () => this.close());
 
-        // Botão Cancelar
+        // Cancel button
         const cancelBtn = this.#element.querySelector('.cotton-modal-cancel');
         if (cancelBtn) {
             cancelBtn.addEventListener('click', (e) => {
                 e.preventDefault();
-                // Chama o callback onCancel se existir, ou fecha o modal
+                // Calls the onCancel callback if it exists, or closes the modal
                 if (this.#options.onCancel) {
                     this.#options.onCancel();
                 }
@@ -206,7 +206,7 @@ export class CottonModal {
             });
         }
 
-        // Botão Enviar
+        // Submit button
         const submitBtn = this.#element.querySelector('.cotton-modal-submit');
 
         if (submitBtn) {
@@ -247,19 +247,19 @@ export class CottonModal {
                     }
                 }
                 
-                // Chamar callback antes da action
+                // Call callback before action
                 const continueSubmit = await Promise.resolve(this.#options.onSubmit(data, form, formData));
                 
-                // Se onSubmit retornar false, não continuar
+                // If onSubmit returns false, do not continue
                 if (continueSubmit === false) {
                     console.log('[CottonModal] onSubmit returned false, stopping');
                     return;
                 }
                 
-                // Se há configuração de action, executar AJAX
+                // If action is configured, execute AJAX
                 if (this.#options.action) {
                     submitBtn.disabled = true;
-                    submitBtn.textContent = 'Enviando...';
+                    submitBtn.textContent = 'Submitting...';
                     
                     try {
                         const response = await this.#executeAction(data, formData);
@@ -270,7 +270,7 @@ export class CottonModal {
                         
                         if (hasDataSuccess) {
                             if (response.data.success === false) {
-                                this.#showErrorModal(errorMsg || response.data.message || 'Erro desconhecido');
+                                this.#showErrorModal(errorMsg || response.data.message || 'Unknown error');
                             } else if (response.data.success === true) {
                                 if (this.#options.action.onSuccess) {
                                     this.#options.action.onSuccess(response);
@@ -281,7 +281,7 @@ export class CottonModal {
                                 }
                             }
                         } else if (response && (errorMsg || success === false)) {
-                            this.#showErrorModal(errorMsg || 'Erro desconhecido');
+                            this.#showErrorModal(errorMsg || 'Unknown error');
                         } else {
                             if (this.#options.action.onSuccess) {
                                 this.#options.action.onSuccess(response);
@@ -292,7 +292,7 @@ export class CottonModal {
                             }
                         }
                     } catch (error) {
-                        this.#showErrorModal(error.message || 'Erro de comunicação');
+                        this.#showErrorModal(error.message || 'Communication error');
                     }
                     
                     submitBtn.disabled = false;
@@ -303,20 +303,20 @@ export class CottonModal {
             });
         }
 
-        // Fechar ao clicar no overlay
+        // Close when clicking overlay
         /*this.#screen.addEventListener('click', (e) => {
             if (e.target === this.#screen) {
                 this.close();
             }
         });*/
 
-        // Fechar com ESC
+        // Close with ESC
         this.#boundKeydownHandler = this.#handleKeydown.bind(this);
         document.addEventListener('keydown', this.#boundKeydownHandler);
     }
 
     /**
-     * Handler para tecla ESC
+     * ESC key handler
      * @private
      */
     #handleKeydown(e) {
@@ -335,10 +335,10 @@ export class CottonModal {
     }
 
     /**
-     * Executa a ação AJAX
+     * Executes the AJAX action
      * @private
-     * @param {Object} data - Dados do formulário
-     * @param {FormData} formData - Dados do formulário
+     * @param {Object} data - Form data
+     * @param {FormData} formData - Form data
      * @returns {Promise<Object>}
      */
     async #executeAction(data, formData) {
@@ -354,7 +354,7 @@ export class CottonModal {
         
         if (method.toUpperCase() === 'POST' || method.toUpperCase() === 'PUT') {
             if (formData) {
-                // Adicionar token CSRF ao FormData
+                // Add CSRF token to FormData
                 if (this.#options.token) {
                     formData.append(this.#options.token, 1);
                 }
@@ -367,25 +367,25 @@ export class CottonModal {
         
         const response = await fetch(url, options);
         
-        // Tentar parsear JSON
+        // Try parsing JSON
         const contentType = response.headers.get('content-type');
         if (contentType && contentType.includes('application/json')) {
             return await response.json();
         }
         
-        // Se não for JSON, retornar texto
+        // If not JSON, return text
         const text = await response.text();
         return { success: response.ok, message: text };
     }
 
     /**
-     * Mostra modal de erro
+     * Shows error modal
      * @private
-     * @param {string} message - Mensagem de erro
+     * @param {string} message - Error message
      */
     #showErrorModal(message) {
         const errorModal = new CottonModal({
-            title: 'Erro',
+            title: 'Error',
             icon: 'icon-cancel',
             width: '420px',
             height: '200px',
@@ -401,7 +401,7 @@ export class CottonModal {
     }
 
     /**
-     * Abre o modal
+     * Opens the modal
      */
     open() {
         if (this.#isOpen) return;
@@ -428,7 +428,7 @@ export class CottonModal {
     }
 
     /**
-     * Fecha o modal
+     * Closes the modal
      */
     close() {
         if (!this.#isOpen) return;
@@ -450,7 +450,7 @@ export class CottonModal {
     }
 
     /**
-     * Atualiza o título do modal
+     * Updates the modal title
      * @param {string} title
      */
     setTitle(title) {
@@ -462,7 +462,7 @@ export class CottonModal {
     }
 
     /**
-     * Atualiza o corpo do modal
+     * Updates the modal body
      * @param {string} bodyHTML
      */
     setBody(bodyHTML) {
@@ -474,7 +474,7 @@ export class CottonModal {
     }
 
     /**
-     * Obtém o elemento do modal
+     * Gets the modal element
      * @returns {HTMLElement}
      */
     getElement() {
@@ -482,7 +482,7 @@ export class CottonModal {
     }
 
     /**
-     * Verifica se o modal está aberto
+     * Checks if the modal is open
      * @returns {boolean}
      */
     isOpen() {
@@ -490,7 +490,7 @@ export class CottonModal {
     }
 
     /**
-     * Destrói o modal
+     * Destroys the modal
      */
     destroy() {
         this.close();
@@ -511,16 +511,16 @@ if (typeof window !== 'undefined') {
 }
 
 /**
- * CottonModalManager - Gerenciador de múltiplos modais
+ * CottonModalManager - Manager for multiple modals
  * @class
  */
 export class CottonModalManager {
     #modals = {};
 
     /**
-     * Cria e registra um modal
-     * @param {string} name - Nome identificador do modal
-     * @param {Object} options - Opções do CottonModal
+     * Creates and registers a modal
+     * @param {string} name - Modal identifier name
+     * @param {Object} options - CottonModal options
      * @returns {CottonModal}
      */
     create(name, options) {
@@ -532,7 +532,7 @@ export class CottonModalManager {
     }
 
     /**
-     * Obtém um modal pelo nome
+     * Gets a modal by name
      * @param {string} name
      * @returns {CottonModal|null}
      */
@@ -541,7 +541,7 @@ export class CottonModalManager {
     }
 
     /**
-     * Abre um modal pelo nome
+     * Opens a modal by name
      * @param {string} name
      */
     open(name) {
@@ -551,7 +551,7 @@ export class CottonModalManager {
     }
 
     /**
-     * Fecha um modal pelo nome
+     * Closes a modal by name
      * @param {string} name
      */
     close(name) {
@@ -561,14 +561,14 @@ export class CottonModalManager {
     }
 
     /**
-     * Fecha todos os modais
+     * Closes all modals
      */
     closeAll() {
         Object.values(this.#modals).forEach(modal => modal.close());
     }
 
     /**
-     * Remove um modal
+     * Removes a modal
      * @param {string} name
      */
     remove(name) {

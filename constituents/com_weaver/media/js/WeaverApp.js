@@ -5,7 +5,14 @@
  * @license GNU/AGPL v3 https://www.gnu.org/licenses/agpl-3.0.html
  */
 
-// Weaver Text Editor - A lightweight code editor for Joomla
+/**
+ * WeaverEditor - Lightweight code editor for Joomla
+ *
+ * Wraps CodeMirror with tab management, file tree navigation,
+ * save/save-as flows, and optional UX enhancements.
+ *
+ * @module WeaverEditor
+ */
 
 const escapeHtml = (typeof CottonHelper !== 'undefined' && CottonHelper.escapeHtml)
     ? CottonHelper.escapeHtml.bind(CottonHelper)
@@ -61,12 +68,22 @@ const WeaverEditor = (() => {
 		return map;
 	})();
 
-	function getMode(fileName) {
+	/**
+ * Resolves the CodeMirror mode for a filename.
+ * @param {string} fileName - File name with extension
+ * @returns {string} CodeMirror mode name
+ */
+function getMode(fileName) {
 		const extension = String(fileName).split('.').pop().toLowerCase();
 		return modeMap[extension] || 'markdown';
 	}
 
-	function setStatus(message, level = 'info') {
+	/**
+ * Updates the status bar message.
+ * @param {string} message - Status text
+ * @param {'info'|'success'|'error'} [level='info'] - Status level
+ */
+function setStatus(message, level = 'info') {
 		const status = mainEl.querySelector('#weaver_status');
 		if (!status) return;
 		if (state.statusTimeoutId) {
@@ -79,39 +96,90 @@ const WeaverEditor = (() => {
 		}, 3000);
 	}
 
-	function setActionState(enabled) {
+	/**
+ * Enables or disables all action buttons.
+ * @param {boolean} enabled - Whether actions are enabled
+ */
+function setActionState(enabled) {
 		mainEl.querySelectorAll('.weaver-action').forEach((button) => {
 			button.disabled = !enabled;
 		});
 	}
 
-	function getQueryParam(name) {
+	/**
+ * Shows an error modal with the given message.
+ * @param {string} message - Error message to display
+ */
+function showErrorModal(message) {
+		if (!window.CottonModal) return;
+		const errorModal = new CottonModal({
+			title: Joomla.Text._('COM_WEAVER_ERROR_FILE_TYPE_NOT_ALLOWED'),
+			icon: window.CottonUIManager ? window.CottonUIManager.getMimeIcon('text/plain', { size: 'fa-1x', colored: true }) : '<i class="icon-cancel"></i>',
+			width: '420px',
+			height: '200px',
+			body: `<span style="color: var(--cot-red, #d93025); margin: 10px; font-size: small;">${escapeHtml(message)}</span>`,
+			showFooter: true,
+			showCancel: false,
+			showSubmit: true,
+			submitText: Joomla.Text._('COM_WEAVER_BUTTON_OK'),
+			submitClass: 'cotton-btn-primary',
+			onSubmit: () => errorModal.close()
+		});
+		errorModal.open();
+	}
+
+	/**
+ * Reads a query parameter from the URL.
+ * @param {string} name - Parameter name
+ * @returns {string|null} Parameter value
+ */
+function getQueryParam(name) {
 		const params = new URLSearchParams(window.location.search);
 		return params.get(name);
 	}
 
-	function getEditor() {
+	/**
+ * Gets the active CodeMirror editor element.
+ * @returns {HTMLElement|null} Editor element
+ */
+function getEditor() {
 		const targetId = state.tabsModule?.getActiveTab()?.id;
 		if (!targetId) return null;
 		return mainEl.querySelector(`#weaver_editor_${targetId}`);
 	}
 
-	function getTextarea() {
+	/**
+ * Gets the hidden textarea associated with the active tab.
+ * @returns {HTMLTextAreaElement|null} Textarea element
+ */
+function getTextarea() {
 		const targetId = state.tabsModule?.getActiveTab()?.id;
 		if (!targetId) return null;
 		return mainEl.querySelector(`#weaver_content_${targetId}`);
 	}
 
-	function getEditorValue() {
+	/**
+ * Gets the current editor value from CodeMirror or fallback textarea.
+ * @returns {string} Editor content
+ */
+function getEditorValue() {
 		const editor = getEditor();
 		return editor?.jEditor?.getValue() ?? getTextarea()?.value ?? '';
 	}
 
-	function isMarkdownMode(mode) {
+	/**
+ * Checks if the given mode is markdown.
+ * @param {string} mode - CodeMirror mode name
+ * @returns {boolean}
+ */
+function isMarkdownMode(mode) {
 		return mode === 'markdown';
 	}
 
-	function hideWeaverTree() {
+	/**
+ * Hides the Weaver folder tree panel.
+ */
+function hideWeaverTree() {
 		const treeContainer = document.getElementById('weaver_tree');
 		if (!treeContainer) return;
 		treeContainer.classList.remove('is-open');
@@ -120,7 +188,10 @@ const WeaverEditor = (() => {
 		if (toggleBtn) toggleBtn.classList.remove('active');
 	}
 
-	function toggleWeaverTree() {
+	/**
+ * Toggles the Weaver folder tree panel visibility.
+ */
+function toggleWeaverTree() {
 		if (isWeaverTreeOpen()) {
 			hideWeaverTree();
 		} else {
@@ -132,7 +203,10 @@ const WeaverEditor = (() => {
 		}
 	}
 
-	function showWeaverTree() {
+	/**
+ * Shows the Weaver folder tree panel.
+ */
+function showWeaverTree() {
 		const treeContainer = document.getElementById('weaver_tree');
 		if (!treeContainer) return;
 		treeContainer.classList.add('is-open');
@@ -145,12 +219,19 @@ const WeaverEditor = (() => {
 		}
 	}
 
-	function isWeaverTreeOpen() {
+	/**
+ * Checks if the Weaver folder tree is open.
+ * @returns {boolean}
+ */
+function isWeaverTreeOpen() {
 		const treeContainer = document.getElementById('weaver_tree');
 		return treeContainer?.classList.contains('is-open') || false;
 	}
 
-	function toggleWeaverMcp() {
+	/**
+ * Toggles the Weaver MCP panel visibility.
+ */
+function toggleWeaverMcp() {
 		if (isWeaverMcpOpen()) {
 			hideWeaverMcp();
 		} else {
@@ -158,7 +239,10 @@ const WeaverEditor = (() => {
 		}
 	}
 
-	function showWeaverMcp() {
+	/**
+ * Shows the Weaver MCP panel.
+ */
+function showWeaverMcp() {
 		const mcpContainer = document.getElementById('weaver_mcp');
 		if (!mcpContainer) return;
 		mcpContainer.classList.add('is-open');
@@ -167,7 +251,10 @@ const WeaverEditor = (() => {
 		if (toggleBtn) toggleBtn.classList.add('active');
 	}
 
-	function hideWeaverMcp() {
+	/**
+ * Hides the Weaver MCP panel.
+ */
+function hideWeaverMcp() {
 		const mcpContainer = document.getElementById('weaver_mcp');
 		if (!mcpContainer) return;
 		mcpContainer.classList.remove('is-open');
@@ -176,12 +263,20 @@ const WeaverEditor = (() => {
 		if (toggleBtn) toggleBtn.classList.remove('active');
 	}
 
-	function isWeaverMcpOpen() {
+	/**
+ * Checks if the Weaver MCP panel is open.
+ * @returns {boolean}
+ */
+function isWeaverMcpOpen() {
 		const mcpContainer = document.getElementById('weaver_mcp');
 		return mcpContainer?.classList.contains('is-open') || false;
 	}
 
-	function updateDirtyState(dirty) {
+	/**
+ * Updates the dirty state for the active tab and save button.
+ * @param {boolean} dirty - Whether the active tab has unsaved changes
+ */
+function updateDirtyState(dirty) {
 		const activeTab = state.tabsModule?.getActiveTab();
 		if (activeTab) {
 			state.tabsModule.setDirty(activeTab.id, dirty);
@@ -191,7 +286,11 @@ const WeaverEditor = (() => {
 		updateSaveAsButtonState();
 	}
 
-	function buildHeader() {
+	/**
+ * Builds the header element.
+ * @returns {HTMLElement} Header element
+ */
+function buildHeader() {
 
 		const maximize = state.ux ? '<div id="weaver_maximize" class="cotton-header-maximize"><i class="icon-expand-2"></i></div>' : '';
 		const header = document.createElement('header');
@@ -204,7 +303,11 @@ const WeaverEditor = (() => {
 		return header;
 	}
 
-		function buildTopBar() {
+		/**
+	 * Builds the top toolbar element.
+	 * @returns {HTMLElement} Toolbar element
+	 */
+	function buildTopBar() {
 			const topbar = document.createElement('nav');
 			topbar.className = 'weaver-topbar';
 			topbar.innerHTML = `<div class="weaver-actions">
@@ -225,6 +328,10 @@ const WeaverEditor = (() => {
 			return topbar;
 		}
 
+	/**
+	 * Builds the main content area.
+	 * @returns {HTMLElement} Main element
+	 */
 	function buildMain() {
 		const main = document.createElement('section');
 		main.className = 'cotton-main';
@@ -241,6 +348,10 @@ const WeaverEditor = (() => {
 		return main;
 	}
 	
+	/**
+	 * Builds the footer element.
+	 * @returns {HTMLElement} Footer element
+	 */
 	function buildFooter() {
 		const footer = document.createElement('footer');
 		footer.className = 'weaver-footer';
@@ -254,6 +365,11 @@ const WeaverEditor = (() => {
 		return footer;
 	}
 
+	/**
+	 * Builds tab icons for a given tab.
+	 * @param {Object} tab - Tab data
+	 * @returns {string} Icon HTML
+	 */
 	function getTabIcons(tab) {
 		if (!window.CottonUIManager) return '';
 		const mimeIcon = window.CottonUIManager.getMimeIcon(window.CottonUIManager.getMimeTypeForFile({ name: tab.name }), { size: 'fa-1x', colored: true });
@@ -261,6 +377,11 @@ const WeaverEditor = (() => {
 		return `${mimeIcon}${permissionIcon ? `<span class="weaver-tab-perm-icon">${permissionIcon}</span>` : ''}`;
 	}
 
+	/**
+	 * Creates the editor pane element for a tab.
+	 * @param {Object} tab - Tab data
+	 * @returns {HTMLElement} Pane element
+	 */
 	function createEditorPane(tab) {
 		const mode = getMode(tab.name);
 		const options = JSON.stringify({
@@ -298,12 +419,20 @@ const WeaverEditor = (() => {
 		return section;
 	}
 
+	/**
+	 * Attaches editor event hooks for a tab.
+	 * @param {string|number} tabId - Tab ID
+	 */
 	function attachEditorHooks(tabId) {
 		const editor = mainEl.querySelector(`#weaver_editor_${tabId}`);
 		if (!editor) return;
 		editor.onkeyup = () => handleEditorChange(tabId);
 	}
 
+	/**
+	 * Handles editor content changes for a tab.
+	 * @param {string|number} tabId - Tab ID
+	 */
 	function handleEditorChange(tabId) {
 		const activeTab = state.tabsModule?.getActiveTab();
 		if (!activeTab || activeTab.id !== tabId) return;
@@ -313,11 +442,17 @@ const WeaverEditor = (() => {
 		updateStats();
 	}
 
+	/**
+	 * Updates the Save As button disabled state.
+	 */
 	function updateSaveAsButtonState() {
 		const saveAsButton = mainEl.querySelector('#weaver_save_as_btn');
 		if (saveAsButton) saveAsButton.disabled = state.tabsModule?.getTabs().length === 0;
 	}
 
+	/**
+	 * Updates action button visibility based on open tabs.
+	 */
 	function updateActionButtonsVisibility() {
 		const tabs = state.tabsModule?.getTabs() || [];
 		const hasTabs = tabs.length > 0;
@@ -329,6 +464,9 @@ const WeaverEditor = (() => {
 		if (saveAsBtn) saveAsBtn.style.display = hasTabs ? '' : 'none';
 	}
 
+	/**
+	 * Updates the stats bar for the active tab.
+	 */
 	function updateStats() {
 		const statsEl = mainEl.querySelector('#weaver_stats');
 		if (!statsEl) return;
@@ -344,6 +482,9 @@ const WeaverEditor = (() => {
 		}
 	}
 
+	/**
+	 * Renders the welcome pane when no tabs are open.
+	 */
 	function renderWelcomePane() {
 		const editorContainer = mainEl.querySelector('#weaver_editor_container');
 		if (!editorContainer) return;
@@ -361,6 +502,9 @@ const WeaverEditor = (() => {
 `);
 	}
 
+	/**
+	 * Initializes the tabs module and registers callbacks.
+	 */
 	function initTabsModule() {
 		const tabsContainer = mainEl.querySelector('#weaver_tabs');
 		const editorContainer = mainEl.querySelector('#weaver_editor_container');
@@ -388,6 +532,9 @@ const WeaverEditor = (() => {
 		state.tabsModule.on('tab:close', () => updateActionButtonsVisibility());
 	}
 
+	/**
+	 * Renders the full UI layout.
+	 */
 	function renderUI() {
 		mainEl.appendChild(buildHeader());
 		mainEl.appendChild(buildTopBar());
@@ -405,6 +552,9 @@ const WeaverEditor = (() => {
 		updateActionButtonsVisibility();
 	}
 
+	/**
+	 * Binds UI action buttons to their handlers.
+	 */
 	function bindActions() {
 		mainEl.querySelector('#weaver_toggle_tree_btn')?.addEventListener('click', toggleWeaverTree);
 		mainEl.querySelector('#weaver_toggle_mcp_btn')?.addEventListener('click', toggleWeaverMcp);
@@ -429,7 +579,10 @@ const WeaverEditor = (() => {
         }
 	}
 
-    function initUXManager() {
+	/**
+	 * Initializes UX behaviors (drag, resize, maximize) when enabled.
+	 */
+	function initUXManager() {
 
         if (!uxManager) {
             return;
@@ -474,6 +627,9 @@ const WeaverEditor = (() => {
 
     }
 
+	/**
+	 * Focuses the CodeMirror editor of the active tab.
+	 */
 	function focusEditor() {
 		const editor = getEditor();
 		if (editor) {
@@ -519,6 +675,10 @@ const WeaverEditor = (() => {
 		return result.data ?? result;
 	}
 
+	/**
+	 * Loads a file into the editor and opens it in a new tab.
+	 * @param {number} fileId - File ID to open
+	 */
 	const openFile = async (fileId) => {
 		try {
 			const tabs = state.tabsModule?.getTabs() || [];
@@ -535,24 +695,8 @@ const WeaverEditor = (() => {
 
 			if (payload.success === false) {
 				const errorMessage = payload.error || Joomla.Text._('COM_WEAVER_ERROR_OPEN_FAILED');
-				console.error('[Weaver] openFile blocked:', errorMessage);
 				setStatus(errorMessage, 'error');
-				if (window.CottonModal) {
-					const errorModal = new CottonModal({
-						title: Joomla.Text._('COM_WEAVER_ERROR_FILE_TYPE_NOT_ALLOWED'),
-						icon: window.CottonUIManager.getMimeIcon('text/plain', { size: 'fa-1x', colored: true }),
-						width: '420px',
-						height: '200px',
-						body: `<span style="color: var(--cot-red, #d93025); margin: 10px; font-size: small;">${escapeHtml(errorMessage)}</span>`,
-						showFooter: true,
-						showCancel: false,
-						showSubmit: true,
-						submitText: Joomla.Text._('COM_WEAVER_BUTTON_OK'),
-						submitClass: 'cotton-btn-primary',
-						onSubmit: () => errorModal.close()
-					});
-					errorModal.open();
-				}
+				showErrorModal(errorMessage);
 				return;
 			}
 
@@ -577,9 +721,13 @@ const WeaverEditor = (() => {
 		} catch (error) {
 			console.error('[Weaver] openFile error:', error);
 			setStatus(error.message, 'error');
+			showErrorModal(error.message);
 		}
 	}
 
+	/**
+	 * Saves the currently active file.
+	 */
 	const saveCurrentFile = async () => {
 		const activeTab = state.tabsModule?.getActiveTab();
 		if (!activeTab || !(activeTab.fileId || activeTab.id)) {
@@ -610,6 +758,9 @@ const WeaverEditor = (() => {
 		}
 	}
 
+	/**
+	 * Opens the "Create New File" modal flow.
+	 */
 	const createNewFile = async () => {
 		let modal = null;
 		let pickerManager = null;
@@ -794,6 +945,9 @@ const WeaverEditor = (() => {
 		}
 	}
 
+	/**
+	 * Opens the "Save As" modal flow.
+	 */
 	const saveAsFile = async () => {
 		let modal = null;
 		let pickerManager = null;
@@ -1001,6 +1155,10 @@ const WeaverEditor = (() => {
 		}
 	}
 
+	/**
+	 * Opens a folder in the Weaver tree view.
+	 * @param {number} [folderId=0] - Folder ID to open
+	 */
 	const openFolder = async (folderId = 0) => {
 		try {
 			setStatus(Joomla.Text._('COM_WEAVER_STATUS_OPENING_FOLDER'), 'info');
@@ -1034,6 +1192,9 @@ const WeaverEditor = (() => {
 		}
 	}
 
+	/**
+	 * Opens the "Open Folder" modal flow.
+	 */
 	const openFolderById = async () => {
 		let modal = null;
 		let pickerManager = null;
@@ -1117,6 +1278,9 @@ const WeaverEditor = (() => {
 		}
 	}
 
+	/**
+	 * Opens the "Open File" modal flow.
+	 */
 	const openFileById = async () => {
 		try {
 			if (!window.CottonModal) {
@@ -1183,6 +1347,11 @@ const WeaverEditor = (() => {
 		}
 	}
 
+	/**
+	 * Prompts the user to save changes before closing a dirty tab.
+	 * @param {Object} tab - Tab data
+	 * @returns {Promise<boolean>} Whether the tab can be closed
+	 */
 	const promptSaveBeforeClose = async (tab) => {
 		if (!window.CottonModal) return false;
 
@@ -1223,6 +1392,9 @@ const WeaverEditor = (() => {
 		});
 	}
 
+	/**
+	 * Initializes the Weaver editor application.
+	 */
 	const initialize = async () => {
 		renderUI();
 
@@ -1233,27 +1405,53 @@ const WeaverEditor = (() => {
 		}
 	};
 
+	/**
+	 * Gets the current tree root folder ID.
+	 * @returns {number} Root folder ID
+	 */
 	function getTreeRootFolderId() {
 		return state.treeRootFolderId || 0;
 	}
 
+	/**
+	 * Refreshes the folder tree from the current root.
+	 */
 	async function refreshTree() {
 		const folderId = state.treeRootFolderId || 0;
 		await openFolder(folderId);
 	}
 
+	/**
+	 * Gets all open tabs.
+	 * @returns {Object[]} Open tabs
+	 */
 	function getOpenTabs() {
 		return state.tabsModule?.getTabs() || [];
 	}
 
+	/**
+	 * Gets the currently active tab.
+	 * @returns {Object|null} Active tab
+	 */
 	function getActiveTab() {
 		return state.tabsModule?.getActiveTab() || null;
 	}
 
+	/**
+	 * Opens a file by ID.
+	 * @param {number} fileId - File ID
+	 */
 	async function openTab(fileId) {
 		return openFile(fileId);
 	}
 
+	/**
+	 * Creates a new file via API.
+	 * @param {number} folderId - Destination folder ID
+	 * @param {string} fileName - File name
+	 * @param {string} [content=''] - Initial content
+	 * @returns {Promise<Object>} Created file data
+	 */
 	async function createFile(folderId, fileName, content = '') {
 		const result = await apiRequest('file_create', {
 			folder_id: folderId,
@@ -1267,6 +1465,12 @@ const WeaverEditor = (() => {
 		return result;
 	}
 
+	/**
+	 * Creates a new folder via API.
+	 * @param {number} folderId - Parent folder ID
+	 * @param {string} folderName - Folder name
+	 * @returns {Promise<Object>} Created folder data
+	 */
 	async function createFolder(folderId, folderName) {
 		const result = await apiRequest('folder_create', {
 			folder_id: folderId,
@@ -1278,6 +1482,11 @@ const WeaverEditor = (() => {
 		return result;
 	}
 
+	/**
+	 * Saves the active tab content.
+	 * @param {string} content - Content to save
+	 * @returns {Promise<Object>} Save result
+	 */
 	async function saveActiveTab(content) {
 		const activeTab = state.tabsModule?.getActiveTab();
 		if (!activeTab || !(activeTab.fileId || activeTab.id)) {
@@ -1299,6 +1508,11 @@ const WeaverEditor = (() => {
 		return result;
 	}
 
+	/**
+	 * Sets the content of a tab and updates dirty state.
+	 * @param {string|number} tabId - Tab ID
+	 * @param {string} content - New content
+	 */
 	function setEditorContent(tabId, content) {
 		const editor = mainEl.querySelector(`#weaver_editor_${tabId}`);
 		const textarea = mainEl.querySelector(`#weaver_content_${tabId}`);
@@ -1315,6 +1529,12 @@ const WeaverEditor = (() => {
 		updateStats();
 	}
 
+	/**
+	 * Refreshes an open tab with new content.
+	 * @param {number} fileId - File ID
+	 * @param {string} newContent - New file content
+	 * @returns {boolean} Whether the tab was found and refreshed
+	 */
 	function refreshOpenTab(fileId, newContent) {
 		const tabs = state.tabsModule?.getTabs() || [];
 		const tab = tabs.find(t => t.fileId === fileId || t.id === fileId);

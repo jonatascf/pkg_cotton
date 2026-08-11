@@ -9,61 +9,84 @@ import { CottonAPI } from './CottonAPI.js';
 import { CottonStorage } from './CottonStorage.js';
 
 /**
- * CottonUploader - Gerenciador de upload com suporte a chunks
- * Implementa resumable upload e rastreamento de progresso
+ * CottonUploader - Upload manager with chunk support
+ * Implements resumable upload and progress tracking
  * 
  * @class
  * @example
  * const result = await CottonUploader.uploadFile(file, folderId, (progress) => {
- *   console.log(`Progresso: ${progress}%`);
+ *   console.log(`Progress: ${progress}%`);
  * });
  */
 export class CottonUploader {
-    static CHUNK_SIZE = 4 * 1024 * 1024; // 4MB (configurável)
+    static CHUNK_SIZE = 4 * 1024 * 1024; // 4MB (configurable)
+    static MAX_FILE_SIZE = 0; // 0 = sem limite
+    static AVAILABLE_SPACE = Infinity; // Infinity = sem limite
     static MAX_RETRIES = 3;
     static RETRY_DELAY = 1000; // ms
     static #uploadController = new AbortController();
     static #activeFileIds = new Set();
 
     /**
-     * Configurar tamanho de chunk (em bytes)
-     * @param {number} bytes 
+     * Configure chunk size (in bytes)
+     * @param {number} bytes
      */
     static setChunkSize(bytes) {
         this.CHUNK_SIZE = bytes;
     }
 
     /**
-     * Faz upload de um arquivo com divisão em chunks
-     * @param {File} file - Arquivo a fazer upload
-     * @param {number} folderId - Pasta destino
-     * @param {Function} onProgress - Callback de progresso (0-100)
-     * @param {string} description - Descrição do arquivo
+     * Configure max file size (in bytes)
+     * @param {number} bytes
+     */
+    static setMaxFileSize(bytes) {
+        this.MAX_FILE_SIZE = bytes;
+    }
+
+    /**
+     * Configure available upload space (in bytes)
+     * @param {number} bytes
+     */
+    static setAvailableSpace(bytes) {
+        this.AVAILABLE_SPACE = bytes;
+    }
+
+    /**
+     * Uploads a file with chunk splitting
+     * @param {File} file - File to upload
+     * @param {number} folderId - Destination folder
+     * @param {Function} onProgress - Progress callback (0-100)
+     * @param {string} description - File description
      * @returns {Promise<Object>} { fileId, success, totalSize, chunksUploaded }
      */
       static async uploadFile(file, folderId, onProgress = null, description = '') {
           try {
-              // Upload direto usando file_upload (não usa file_create)
-              console.log(`[CottonUploader] Iniciando upload: ${file.name} (${this.#formatSize(file.size)}) para pasta ${folderId}`);
-              
-              // Determinar se precisa chunked ou single upload
+              if (this.MAX_FILE_SIZE > 0 && file.size > this.MAX_FILE_SIZE) {
+                  throw new Error(Joomla.Text._('COM_COTTON_ERROR_MAX_FILESIZE') + ' [' + this.#formatSize(this.MAX_FILE_SIZE) + ']');
+              }
+
+              if (this.AVAILABLE_SPACE !== Infinity && file.size > this.AVAILABLE_SPACE) {
+                  throw new Error(Joomla.Text._('COM_COTTON_ERROR_LIMIT_SPACE') + ' [' + this.#formatSize(this.AVAILABLE_SPACE) + ']');
+              }
+
+               // Determine if chunked or single upload is needed
               if (file.size <= this.CHUNK_SIZE) {
-                  // Upload único
+                   // Single upload
                   return await this.#uploadSingleChunk(file, 0, folderId, onProgress);
               } else {
-                  // Upload com chunks
+                   // Chunked upload
                   return await this.#uploadMultipleChunks(file, 0, folderId, onProgress);
               }
           } catch (error) {
-              if (error.message !== 'Upload cancelado') {
-                  console.error('[CottonUploader] Erro ao fazer upload:', error);
+               if (error.message !== 'Upload cancelled') {
+                   console.error('[CottonUploader] Error uploading:', error);
               }
               throw error;
           }
       }
 
     /**
-     * Upload de arquivo único (sem chunks)
+     * Single file upload (no chunks)
      * @private
      */
      static async #uploadSingleChunk(file, chunkIndex, folderId, onProgress) {
@@ -81,12 +104,12 @@ export class CottonUploader {
              );
 
              if (result?.success === false) {
-                 throw new Error(result?.error || 'Erro ao enviar arquivo');
+                  throw new Error(result?.error || 'Error uploading file');
              }
 
              const fileId = result?.file_id || result?.file?.[0]?.id || result?.id;
              if (!fileId) {
-                 throw new Error('Erro ao obter o ID do arquivo enviado');
+                 throw new Error('Error getting uploaded file ID');
              }
 
               CottonUploader.#activeFileIds.add(fileId);
@@ -109,7 +132,7 @@ export class CottonUploader {
      }
 
     /**
-     * Upload com múltiplos chunks
+     * Upload with multiple chunks
      * @private
      */
     static async #uploadMultipleChunks(file, chunkIndex, folderId, onProgress) {
@@ -117,7 +140,7 @@ export class CottonUploader {
         let chunksUploaded = 0;
         let fileId = 0;  // 0 = criar novo arquivo
 
-        console.log(`[CottonUploader] Dividindo em ${totalChunks} chunks`);
+        //console.log(`[CottonUploader] Splitting into ${totalChunks} chunks`);
 
         try {
             for (let i = 0; i < totalChunks; i++) {
@@ -125,7 +148,7 @@ export class CottonUploader {
                 const end = Math.min(start + this.CHUNK_SIZE, file.size);
                 const chunk = file.slice(start, end);
                 
-                // Upload com retry - captura o fileId da primeira execução
+                 // Upload with retry - captures fileId from first execution
                 const result = await this.#uploadChunkWithRetry(
                     fileId,
                     chunk,
@@ -136,7 +159,7 @@ export class CottonUploader {
                     CottonUploader.#uploadController.signal
                 );
 
-                // Na primeira execução, obter o fileId criado
+                 // On first execution, get the created fileId
                 const uploadedFileId = result?.file_id || result?.file?.[0]?.id || result?.id;
                 if (uploadedFileId) {
                     fileId = uploadedFileId;
@@ -144,7 +167,7 @@ export class CottonUploader {
                 }
 
                 if (!fileId) {
-                    throw new Error('Erro ao obter o ID do arquivo enviado');
+                    throw new Error('Error getting uploaded file ID');
                 }
 
                 chunksUploaded++;
@@ -166,7 +189,7 @@ export class CottonUploader {
                 chunkSize: this.CHUNK_SIZE
             };
         } catch (error) {
-            CottonStorage.failUpload(fileId || 0, `Erro no chunk ${chunksUploaded + 1}/${totalChunks}`);
+            CottonStorage.failUpload(fileId || 0, `Error in chunk ${chunksUploaded + 1}/${totalChunks}`);
             throw error;
         } finally {
             if (fileId) {
@@ -176,7 +199,7 @@ export class CottonUploader {
     }
 
     /**
-     * Upload de chunk com retry automático
+     * Chunk upload with automatic retry
      * @private
      */
      static async #uploadChunkWithRetry(fileId, chunk, chunkIndex, totalChunks, fileName, folderId, signal, attempt = 0) {
@@ -191,7 +214,7 @@ export class CottonUploader {
                  signal
              ).then(result => {
                  if (result?.success === false) {
-                     throw new Error(result?.error || 'Erro ao enviar chunk');
+                      throw new Error(result?.error || 'Error uploading chunk');
                  }
                  return result;
              });
@@ -200,10 +223,10 @@ export class CottonUploader {
                  throw error;
              }
              if (attempt < this.MAX_RETRIES) {
-                 console.warn(
-                     `[CottonUploader] Tentativa ${attempt + 1}/${this.MAX_RETRIES} falhou, retry em ${this.RETRY_DELAY}ms`,
-                     error.message
-                 );
+                  console.warn(
+                      `[CottonUploader] Attempt ${attempt + 1}/${this.MAX_RETRIES} failed, retry in ${this.RETRY_DELAY}ms`,
+                      error.message
+                  );
                  
                  await this.#delay(this.RETRY_DELAY);
                  return await this.#uploadChunkWithRetry(
@@ -217,17 +240,17 @@ export class CottonUploader {
                      attempt + 1
                  );
              } else {
-                 throw new Error(`Falha no chunk ${chunkIndex}/${totalChunks} após ${this.MAX_RETRIES} tentativas`);
+                  throw new Error(`Chunk ${chunkIndex}/${totalChunks} failed after ${this.MAX_RETRIES} attempts`);
              }
          }
      }
 
     /**
-     * Pausa um upload (placeholder para futura implementação)
-     * @param {number} fileId 
+     * Pauses an upload (placeholder for future implementation)
+     * @param {number} fileId
      */
     static pauseUpload(fileId) {
-        // TODO: Implementar pausa via AbortController
+         // TODO: Implement pause via AbortController
         const upload = CottonStorage.getUploadProgress(fileId);
         if (upload.status === 'uploading') {
             CottonStorage.setUploadProgress(fileId, upload.progress, 'paused');
@@ -235,11 +258,11 @@ export class CottonUploader {
     }
 
     /**
-     * Retoma um upload pausado
-     * @param {number} fileId 
+     * Resumes a paused upload
+     * @param {number} fileId
      */
     static resumeUpload(fileId) {
-        // TODO: Implementar retomada
+         // TODO: Implement resume
         const upload = CottonStorage.getUploadProgress(fileId);
         if (upload.status === 'paused') {
             CottonStorage.setUploadProgress(fileId, upload.progress, 'uploading');
@@ -247,17 +270,17 @@ export class CottonUploader {
     }
 
     /**
-      * Cancela um upload
-      * @param {number} fileId 
+     * Cancels an upload
+     * @param {number} fileId
       */
      static cancelUpload(fileId) {
          CottonUploader.#abortUploadController();
          CottonStorage.clearUpload(fileId);
-         console.log(`[CottonUploader] Upload ${fileId} cancelado`);
+          //console.log(`[CottonUploader] Upload ${fileId} cancelled`);
      }
 
      /**
-      * Cancela todos os uploads em andamento
+      * Cancels all ongoing uploads
       */
       static async cancelAllUploads() {
           CottonUploader.#abortUploadController();
@@ -270,11 +293,11 @@ export class CottonUploader {
               try {
                   await CottonAPI.cancelUpload(fileId);
               } catch (e) {
-                  console.warn('[CottonUploader] Falha ao cancelar upload no servidor:', fileId, e);
+                  console.warn('[CottonUploader] Failed to cancel upload on server:', fileId, e);
               }
           }
           
-          console.log('[CottonUploader] Todos os uploads cancelados');
+          //console.log('[CottonUploader] All uploads cancelled');
       }
 
      static #abortUploadController() {
@@ -285,19 +308,19 @@ export class CottonUploader {
      }
 
     /**
-     * Faz upload de múltiplos arquivos em paralelo
-     * @param {File[]} files - Array de arquivos
-     * @param {number} folderId - Pasta destino
-     * @param {Function} onProgress - Callback com progresso total
-     * @param {number} maxParallel - Máximo de uploads simultâneos (padrão 3)
-     * @returns {Promise<Array>} Array de resultados
+     * Uploads multiple files in parallel
+     * @param {File[]} files - Array of files
+     * @param {number} folderId - Destination folder
+     * @param {Function} onProgress - Callback with total progress
+     * @param {number} maxParallel - Max simultaneous uploads (default 3)
+     * @returns {Promise<Array>} Array of results
      */
     static async uploadMultiple(files, folderId, onProgress = null, maxParallel = 3) {
         const results = [];
         let completed = 0;
         const total = files.length;
 
-        // Fila de uploads
+         // Upload queue
         const queue = [...files];
         let activeUploads = 0;
 
@@ -311,7 +334,7 @@ export class CottonUploader {
                         const result = await this.uploadFile(
                             file,
                             folderId,
-                            null, // não usar progresso individual
+                             null, // do not use individual progress
                             ''
                         );
                         results.push(result);
@@ -341,8 +364,8 @@ export class CottonUploader {
     }
 
     /**
-     * Retoma uploads interrompidos (placeholder)
-     * @param {number} folderId 
+     * Resumes interrupted uploads (placeholder)
+     * @param {number} folderId
      * @returns {Promise<Array>}
      */
     static async resumePendingUploads(folderId) {
@@ -350,15 +373,15 @@ export class CottonUploader {
         const results = [];
 
         for (const [fileId, upload] of Object.entries(pending)) {
-            // TODO: Implementar lógica de retomada
-            console.log(`[CottonUploader] Retomando upload ${fileId}`);
+             // TODO: Implement resume logic
+             //console.log(`[CottonUploader] Resuming upload ${fileId}`);
         }
 
         return results;
     }
 
     /**
-     * Formata tamanho de arquivo
+     * Formats file size
      * @private
      */
     static #formatSize(bytes) {
@@ -383,11 +406,11 @@ export class CottonUploader {
     }
 
     /**
-     * Obter estimativa de tempo restante
-     * @param {number} fileSize - Tamanho do arquivo em bytes
-     * @param {number} uploadedSize - Tamanho já enviado
-     * @param {number} startTime - Timestamp inicial
-     * @returns {string} Tempo estimado (ex: "2m 30s")
+     * Get estimated time remaining
+     * @param {number} fileSize - File size in bytes
+     * @param {number} uploadedSize - Size already uploaded
+     * @param {number} startTime - Initial timestamp
+     * @returns {string} Estimated time (ex: "2m 30s")
      */
     static estimateTimeRemaining(fileSize, uploadedSize, startTime) {
         const elapsed = (Date.now() - startTime) / 1000;
@@ -405,10 +428,10 @@ export class CottonUploader {
     }
 
     /**
-     * Calcular velocidade de upload
-     * @param {number} uploadedSize - Bytes enviados
-     * @param {number} startTime - Timestamp inicial
-     * @returns {string} Velocidade (ex: "2.5 MB/s")
+     * Calculate upload speed
+     * @param {number} uploadedSize - Bytes uploaded
+     * @param {number} startTime - Initial timestamp
+     * @returns {string} Speed (ex: "2.5 MB/s")
      */
     static calculateSpeed(uploadedSize, startTime) {
         const elapsed = (Date.now() - startTime) / 1000;

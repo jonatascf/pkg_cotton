@@ -123,6 +123,38 @@
 	flex: 1 1 0; /* Important to UX */
 	min-height: 0; /* Important to UX */
     min-width: 0;   /* Important to UX */
+    position: relative;
+}
+
+.cotton-items-status {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 1000;
+    font-size: 12px;
+    padding: 6px 8px;
+    border-radius: 3px;
+    background: var(--cot-gray1);
+    border-left: 3px solid var(--cot-gray5);
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+    pointer-events: none;
+    color: var(--cot-font2);
+}
+
+.cotton-items-status--visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.cotton-items-status--success {
+    border-left-color: var(--cot-green);
+    color: var(--cot-green);
+}
+
+.cotton-items-status--error {
+    border-left-color: var(--cot-red);
+    color: var(--cot-red);
 }
 
 .cotton-item-info-container {
@@ -178,19 +210,19 @@
 
 .cotton-footer {
 	display: flex;
-	justify-content: flex-end;
+	justify-content: space-between;
 	align-items: flex-end;
 	gap: 8px;
-	padding: 4px;
+	padding: 4px 8px;
 	background-color: var(--cot-gray4);
 	flex: 0 0 auto;
 	font-size: small;
-	color: var(--cot-gray1);
+	color: var(--cot-font2);
 }
 
 .cotton-status {
 	font-size: small;
-	color: var(--cot-gray1);
+	color: var(--cot-font2);
 }
 
 /* ===== FOLDER TREE ===== */
@@ -427,10 +459,6 @@
 	display: inline-flex;
 	gap: 0.25rem;
 	flex-shrink: 0;
-}
-
-.cotton-items-count {
-	color: var(--cot-gray5);
 }
 
 .cotton-search-input {
@@ -751,10 +779,6 @@
 }
 
 /* ===== MISC ===== */
-
-.cotton-status {
-	font-size: 0.85rem;
-}
 
 .cotton-error,
 .cotton-success {

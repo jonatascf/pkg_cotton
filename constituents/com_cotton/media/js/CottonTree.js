@@ -6,13 +6,13 @@
  */
 
 /**
- * CottonTree - Módulo genérico para renderização de árvore de pastas/arquivos
- * 
- * Fornece uma árvore navegável com suporte a:
- * - Expansão/recolhimento de pastas
- * - Renderização de arquivos filhos
- * - Callbacks configuráveis para eventos
- * 
+ * CottonTree - Generic folder/file tree renderer
+ *
+ * Provides a navigable tree with support for:
+ * - Folder expand/collapse
+ * - Child file rendering
+ * - Configurable event callbacks
+ *
  * @class
  * @example
  * const tree = new CottonTree('#tree-container', {
@@ -33,18 +33,18 @@ export class CottonTree {
         activeFolderId: 0
     };
 
-    /**
-     * Construtor
-     * @param {string|HTMLElement} container - Seletor ou elemento DOM
-     * @param {Object} options - Configurações
-     *   @param {Function} options.onFolderClick - Callback ao clicar em pasta
-     *   @param {Function} options.onFileClick - Callback ao clicar em arquivo
-     *   @param {Function} options.onTrashClick - Callback ao clicar no botão lixeira
-     *   @param {Function} options.getIcon - Função para ícone MIME
-     *   @param {Function} options.getPermissionIcon - Função para ícone de permissão
-     *   @param {Function} options.onFolderToggle - Callback ao togglear pasta (id, expanded)
-     */
-    constructor(container, options = {}) {
+     /**
+      * Creates a new tree instance.
+      * @param {string|HTMLElement} container - DOM selector or element
+      * @param {Object} options - Configuration options
+      *   @param {Function} options.onFolderClick - Callback when a folder is clicked
+      *   @param {Function} options.onFileClick - Callback when a file is clicked
+      *   @param {Function} options.onTrashClick - Callback when the trash button is clicked
+      *   @param {Function} options.getIcon - MIME icon getter function
+      *   @param {Function} options.getPermissionIcon - Permission icon getter function
+      *   @param {Function} options.onFolderToggle - Callback when a folder is toggled (id, expanded)
+      */
+     constructor(container, options = {}) {
         if (typeof container === 'string') {
             this.#container = document.querySelector(container);
         } else {
@@ -52,7 +52,7 @@ export class CottonTree {
         }
 
         if (!this.#container) {
-            throw new Error('[CottonTree] Container não encontrado');
+            throw new Error('[CottonTree] Container not found');
         }
 
         this.#options = {
@@ -67,30 +67,54 @@ export class CottonTree {
         };
     }
 
-    #defaultGetIcon(mimeType, options = {}) {
-        return CottonHelper.getMimeIcon(mimeType, options);
-    }
+     /**
+      * Default MIME icon getter using CottonHelper.
+      * @param {string} mimeType - MIME type
+      * @param {Object} [options={}] - Icon options
+      * @returns {string} Icon HTML
+      * @private
+      */
+     #defaultGetIcon(mimeType, options = {}) {
+         return CottonHelper.getMimeIcon(mimeType, options);
+     }
 
-    #defaultGetPermissionIcon(item) {
-        const openLink = parseInt(item?.open_link ?? 0, 10) || 0;
-        if (openLink === 1) {
-            return '<span class="cotton-perm-icon cotton-perm-icon-limited" title="Usuários específicos"><i class="fa-solid fa-users"></i></span>';
-        }
-        if (openLink === 2) {
-            return '<span class="cotton-perm-icon cotton-perm-icon-public" title="Público"><i class="fa-solid fa-globe"></i></span>';
-        }
-        return '';
-    }
+     /**
+      * Default permission icon getter.
+      * @param {Object} item - Item data
+      * @returns {string} Permission icon HTML
+      * @private
+      */
+     #defaultGetPermissionIcon(item) {
+         const openLink = parseInt(item?.open_link ?? 0, 10) || 0;
+         if (openLink === 1) {
+             return '<span class="cotton-perm-icon cotton-perm-icon-limited" title="Specific users"><i class="fa-solid fa-users"></i></span>';
+         }
+         if (openLink === 2) {
+             return '<span class="cotton-perm-icon cotton-perm-icon-public" title="Public"><i class="fa-solid fa-globe"></i></span>';
+         }
+         return '';
+     }
 
-    setExpandedFolders(ids) {
-        this.#expandedFolders = new Set(ids);
-    }
+     /**
+      * Sets the set of expanded folder IDs.
+      * @param {Iterable<number>} ids - Folder IDs to expand
+      */
+     setExpandedFolders(ids) {
+         this.#expandedFolders = new Set(ids);
+     }
 
-    getExpandedFolders() {
-        return Array.from(this.#expandedFolders);
-    }
+     /**
+      * Gets the current expanded folder IDs.
+      * @returns {number[]} Array of expanded folder IDs
+      */
+     getExpandedFolders() {
+         return Array.from(this.#expandedFolders);
+     }
 
-    expandAll() {
+     /**
+      * Expands all folders in the tree.
+      */
+     expandAll() {
         const collectIds = (nodes) => {
             nodes.forEach(node => {
                 this.#expandedFolders.add(node.id);
@@ -102,16 +126,30 @@ export class CottonTree {
         this.render(this.#treeData);
     }
 
-    collapseAll() {
-        this.#expandedFolders.clear();
-        this.render(this.#treeData);
-    }
+     /**
+      * Collapses all folders in the tree.
+      */
+     collapseAll() {
+         this.#expandedFolders.clear();
+         this.render(this.#treeData);
+     }
 
-    setActiveFolder(folderId) {
-        this.#state.activeFolderId = folderId;
-    }
+     /**
+      * Sets the active folder ID.
+      * @param {number} folderId - Folder ID
+      */
+     setActiveFolder(folderId) {
+         this.#state.activeFolderId = folderId;
+     }
 
-    #findNodeById(treeData, nodeId) {
+     /**
+      * Finds a node by ID in the tree data recursively.
+      * @param {Object[]} treeData - Tree data array
+      * @param {number|string} nodeId - Node ID to find
+      * @returns {Object|null} Found node or null
+      * @private
+      */
+     #findNodeById(treeData, nodeId) {
         for (const node of treeData) {
             if (node.id === nodeId) return node;
             if (node.children && node.children.length > 0) {
@@ -121,8 +159,15 @@ export class CottonTree {
         }
         return null;
     }
-
-    #toggleFolder(folderId, expandIcon, childrenContainer) {
+    
+     /**
+      * Toggles folder expand/collapse state.
+      * @param {number} folderId - Folder ID
+      * @param {HTMLElement} expandIcon - Expand/collapse icon element
+      * @param {HTMLElement} childrenContainer - Children container element
+      * @private
+      */
+     #toggleFolder(folderId, expandIcon, childrenContainer) {
         const isExpanded = this.#expandedFolders.has(folderId);
 
         if (isExpanded) {
@@ -139,7 +184,14 @@ export class CottonTree {
         this.#options.onFolderToggle(folderId, !isExpanded);
     }
 
-    #renderFolderNode(node, level = 0) {
+     /**
+      * Renders a folder node and its children recursively.
+      * @param {Object} node - Folder node data
+      * @param {number} level - Nesting level
+      * @returns {HTMLElement} Rendered folder node element
+      * @private
+      */
+     #renderFolderNode(node, level = 0) {
         const container = document.createElement('div');
         container.className = 'cotton-tree-node';
         container.dataset.nodeId = node.id;
@@ -158,7 +210,7 @@ export class CottonTree {
         if (canExpand) {
             const isExpanded = this.#expandedFolders.has(node.id);
             expandIcon.className = `cotton-tree-expand cotton-tree-expand--${isExpanded ? 'expanded' : 'collapsed'}`;
-            expandIcon.title = isExpanded ? 'Recolher' : 'Expandir';
+            expandIcon.title = isExpanded ? 'Collapse' : 'Expand';
         } else {
             expandIcon.className = 'cotton-tree-spacer';
         }
@@ -224,7 +276,14 @@ export class CottonTree {
         return container;
     }
 
-    #renderFileNode(file, level = 0) {
+     /**
+      * Renders a file node element.
+      * @param {Object} file - File data
+      * @param {number} level - Nesting level
+      * @returns {HTMLElement} Rendered file node element
+      * @private
+      */
+     #renderFileNode(file, level = 0) {
         const fileRow = document.createElement('div');
         fileRow.className = 'cotton-tree-file-row';
         fileRow.style.paddingLeft = `${(level * 16) + 20}px`;
@@ -261,7 +320,12 @@ export class CottonTree {
         return fileRow;
     }
 
-    #setActiveTreeItem(folderId) {
+     /**
+      * Sets the active tree item by folder ID.
+      * @param {number|string} folderId - Folder ID to mark active
+      * @private
+      */
+     #setActiveTreeItem(folderId) {
         const tree = this.#container;
         
         tree.querySelectorAll('.cotton-tree-folder-row.active, .cotton-tree-name.active')
@@ -281,12 +345,24 @@ export class CottonTree {
         });
     }
 
-    #getMimeTypeForFile(file) {
+     /**
+      * Gets the MIME type for a file using CottonHelper.
+      * @param {Object} file - File data
+      * @returns {string} MIME type
+      * @private
+      */
+     #getMimeTypeForFile(file) {
         const ext = CottonHelper.getExtension(file.name);
         return CottonHelper.extensionToMime(ext);
     }
 
-    render(treeData, options = {}) {
+     /**
+      * Renders the tree structure from tree data.
+      * @param {Object|Object[]} treeData - Tree data to render
+      * @param {Object} [options={}] - Render options
+      * @param {number|string} [options.startNode] - Starting node ID for rendering
+      */
+     render(treeData, options = {}) {
         this.#treeData = treeData;
         
         if (options.startNode !== undefined && options.startNode !== null) {
@@ -348,7 +424,10 @@ export class CottonTree {
         }
     }
 
-    destroy() {
+     /**
+      * Destroys the tree instance and cleans up the container.
+      */
+     destroy() {
         if (this.#container) {
             this.#container.innerHTML = '';
         }

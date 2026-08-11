@@ -5,6 +5,13 @@
  * @license GNU/AGPL v3 https://www.gnu.org/licenses/agpl-3.0.html
  */
 
+/**
+ * ShuttleApp - Terminal-style interface for Shuttle commands
+ *
+ * Provides a browser-based shell with command parsing, history navigation,
+ * remote execution, and hardware/system inspection commands.
+ */
+
 class ShuttleApp {
     #container = null;
     #config = {};
@@ -20,7 +27,10 @@ class ShuttleApp {
     #parent_id = null;
     #uxManager = new window.CottonUXManager() || null;
 
-    constructor() {
+     /**
+      * Creates a new ShuttleApp instance.
+      */
+     constructor() {
         this.#config = Joomla.getOptions('com_shuttle') || {};
         this.#container = document.getElementById('shuttle_app');
 
@@ -34,7 +44,11 @@ class ShuttleApp {
         this.#init();
     }
 
-    async #init() {
+     /**
+      * Initializes the app: DOM, events, UX, welcome message, and command rules.
+      * @private
+      */
+     async #init() {
         this.#buildDOM();
         this.#attachEvents();
         if (this.#config.ux) {
@@ -44,7 +58,11 @@ class ShuttleApp {
         await this.#loadCommandRules();
     }
 
-    #buildDOM() {
+     /**
+      * Builds the terminal DOM structure.
+      * @private
+      */
+     #buildDOM() {
         this.#container.innerHTML = '';
         this.#container.className = 'cotton-container';
 
@@ -84,7 +102,11 @@ class ShuttleApp {
     }
 
 
-    #buildInputLine() {
+     /**
+      * Builds the input line with prompt and text input.
+      * @private
+      */
+     #buildInputLine() {
         const existingInputLine = this.#container.querySelector('.shuttle-inputline');
         if (existingInputLine) {
             existingInputLine.remove();
@@ -114,7 +136,11 @@ class ShuttleApp {
         this.#input.focus();
     }
 
-    #initUXManager() {
+     /**
+      * Initializes UX behaviors when enabled.
+      * @private
+      */
+     #initUXManager() {
 
         if (!this.#uxManager) {
             return;
@@ -141,7 +167,11 @@ class ShuttleApp {
 
     }
 
-    #attachEvents() {
+     /**
+      * Attaches global container events.
+      * @private
+      */
+     #attachEvents() {
         this.#attachOutputEvents();
 
         if (this.#config.ux) {
@@ -159,7 +189,11 @@ class ShuttleApp {
         }
     }
 
-    #attachOutputEvents() {
+     /**
+      * Attaches output click-to-focus behavior.
+      * @private
+      */
+     #attachOutputEvents() {
         this.#output.addEventListener('click', () => {
             if (this.#input) {
                 this.#input.focus();
@@ -167,7 +201,11 @@ class ShuttleApp {
         });
     }
 
-    #attachInputEvents() {
+     /**
+      * Attaches keyboard handlers to the terminal input.
+      * @private
+      */
+     #attachInputEvents() {
         this.#input.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 e.preventDefault();
@@ -232,7 +270,13 @@ class ShuttleApp {
         });
     }
 
-    async #executeRemoteCommand(parsedCommand) {
+     /**
+      * Sends a parsed command to the backend for remote execution.
+      * @param {Object} parsedCommand - Parsed command structure
+      * @returns {Promise<Object|null>} Server result
+      * @private
+      */
+     async #executeRemoteCommand(parsedCommand) {
         const commandString = [parsedCommand.command, ...parsedCommand.options, ...parsedCommand.parameters].join(' ').trim();
         if (!commandString) {
                     this.#displayError(Joomla.Text._('COM_SHUTTLE_COMMAND_EMPTY'));
@@ -286,7 +330,13 @@ class ShuttleApp {
         }
     }
 
-    #renderRemoteResult(result, parsedCommand = null) {
+     /**
+      * Renders the remote command result into the terminal output.
+      * @param {Object} result - Backend result
+      * @param {Object} [parsedCommand] - Parsed command
+      * @private
+      */
+     #renderRemoteResult(result, parsedCommand = null) {
         const command = parsedCommand?.command || result.command;
         const rawOutput = this.#commandShouldReturnRawJson(command, parsedCommand);
 
@@ -304,7 +354,13 @@ class ShuttleApp {
         }
     }
 
-    #renderRemoteOutput(output, rawOutput) {
+     /**
+      * Renders raw or structured remote output.
+      * @param {*} output - Output value
+      * @param {boolean} rawOutput - Whether to render as raw JSON
+      * @private
+      */
+     #renderRemoteOutput(output, rawOutput) {
         if (typeof output === 'string') {
             this.#printLine(output, 'output');
             return;
@@ -313,7 +369,14 @@ class ShuttleApp {
         this.#printLine(JSON.stringify(output, null, 2), 'output');
     }
 
-    #renderResultData(data, rawOutput, command = null) {
+     /**
+      * Renders result data as a table or formatted JSON.
+      * @param {*} data - Result data
+      * @param {boolean} rawOutput - Whether to render as raw JSON
+      * @param {string} [command] - Command name
+      * @private
+      */
+     #renderResultData(data, rawOutput, command = null) {
         if (rawOutput) {
             const obj = document.createElement('pre');
             obj.textContent = JSON.stringify(data, null, 2);
@@ -335,7 +398,12 @@ class ShuttleApp {
         }
     }
 
-    #printTable(items) {
+     /**
+      * Renders an array of objects as an HTML table.
+      * @param {Array} items - Array of objects
+      * @private
+      */
+     #printTable(items) {
         const table = document.createElement('table');
         table.className = 'shuttle-terminal__table';
         const thead = table.createTHead();
@@ -364,14 +432,27 @@ class ShuttleApp {
         this.#output.appendChild(table);
     }
 
-    #humanizeHeader(key) {
+     /**
+      * Converts a camelCase or snake_case key to a human-readable header.
+      * @param {string} key - Property name
+      * @returns {string} Humanized header
+      * @private
+      */
+     #humanizeHeader(key) {
         return key
             .replace(/_/g, ' ')
             .replace(/\b\w/g, char => char.toUpperCase())
             .replace(/Id\b/, 'ID');
     }
 
-    #commandShouldReturnRawJson(command, parsedCommand) {
+     /**
+      * Determines whether a command should return raw JSON output.
+      * @param {string} command - Command name
+      * @param {Object} [parsedCommand] - Parsed command
+      * @returns {boolean}
+      * @private
+      */
+     #commandShouldReturnRawJson(command, parsedCommand) {
         const rawJsonCommands = new Set(['cc-resolve']);
         if (!command) {
             return false;
@@ -385,7 +466,15 @@ class ShuttleApp {
         return rawJsonCommands.has(command);
     }
 
-    #shouldRenderTable(command, data, rawOutput) {
+     /**
+      * Determines whether result data should be rendered as a table.
+      * @param {string} command - Command name
+      * @param {*} data - Result data
+      * @param {boolean} rawOutput - Whether raw JSON output is requested
+      * @returns {boolean}
+      * @private
+      */
+     #shouldRenderTable(command, data, rawOutput) {
         if (rawOutput) {
             return false;
         }
@@ -394,19 +483,35 @@ class ShuttleApp {
         return tableCommands.has(command) && Array.isArray(data) && data.length > 0 && typeof data[0] === 'object';
     }
 
-    #isSilentDataCommand(command) {
+     /**
+      * Determines whether a command should suppress data rendering.
+      * @param {string} command - Command name
+      * @returns {boolean}
+      * @private
+      */
+     #isSilentDataCommand(command) {
         const silentCommands = new Set(['cd', 'mkdir', 'rmdir', 'mv', 'cp', 'cotton-create', 'cotton-save', 'cotton-delete']);
         return silentCommands.has(command);
     }
 
-    #escapeHtml(value) {
+     /**
+      * Escapes HTML special characters for safe output.
+      * @param {string} value - Input text
+      * @returns {string} Escaped text
+      * @private
+      */
+     #escapeHtml(value) {
         return String(value)
             .replace(/&/g, '&amp;')
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;');
     }
 
-    #printWelcome() {
+     /**
+      * Prints the welcome banner to the terminal.
+      * @private
+      */
+     #printWelcome() {
         const art = [
             '░█▀▀░█▀█░▀█▀░▀█▀░█▀█░█▀█░░░█▀▀░█░░░█▀█░█░█░█▀▄',
             '░█░░░█░█░░█░░░█░░█░█░█░█░░░█░░░█░░░█░█░█░█░█░█',
@@ -419,7 +524,11 @@ class ShuttleApp {
         art.forEach(line => this.#printLine(line, 'info'));
     }
 
-    async #loadCommandRules() {
+     /**
+      * Loads command rules from CommandRules.json.
+      * @private
+      */
+     async #loadCommandRules() {
         const url = `${this.#config.siteUrl}media/com_shuttle/js/CommandRules.json`;
 
         try {
@@ -433,7 +542,13 @@ class ShuttleApp {
         }
     }
 
-    #parseCommand(commandString) {
+     /**
+      * Parses a command string into command, options, and parameters.
+      * @param {string} commandString - Raw command input
+      * @returns {Object} Parsed command structure
+      * @private
+      */
+     #parseCommand(commandString) {
         const tokens = [];
         let current = '';
         let quote = null;
@@ -498,7 +613,13 @@ class ShuttleApp {
         return { command, options, parameters };
     }
 
-    #validateCommand(parsedCommand) {
+     /**
+      * Validates a parsed command against loaded command rules.
+      * @param {Object} parsedCommand - Parsed command structure
+      * @returns {string|null} Validation error or null
+      * @private
+      */
+     #validateCommand(parsedCommand) {
         const { command, options, parameters } = parsedCommand;
 
         if (!this.#commandRules[command]) {
@@ -525,7 +646,12 @@ class ShuttleApp {
         return null;
     }
 
-    async #executeCommand(parsedCommand) {
+     /**
+      * Executes a validated parsed command.
+      * @param {Object} parsedCommand - Parsed command structure
+      * @private
+      */
+     async #executeCommand(parsedCommand) {
         const { command, options, parameters } = parsedCommand;
 
         switch (command) {
@@ -626,7 +752,12 @@ class ShuttleApp {
         this.#scrollToBottom();
     }
 
-    async #executeLs(parsedCommand) {
+     /**
+      * Executes the `ls` command, defaulting to the active folder when no target is given.
+      * @param {Object} parsedCommand - Parsed command structure
+      * @private
+      */
+     async #executeLs(parsedCommand) {
         const hasTarget = parsedCommand.parameters.length > 0
             || parsedCommand.options.includes('-i')
             || parsedCommand.options.includes('--id');
@@ -639,7 +770,11 @@ class ShuttleApp {
         await this.#executeRemoteCommand(parsedCommand);
     }
 
-    #cmdLsMedia() {
+     /**
+      * Lists available media input/output devices.
+      * @private
+      */
+     #cmdLsMedia() {
         if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
             this.#displayError(Joomla.Text._('COM_SHUTTLE_API_MEDIA_NOT_SUPPORTED'));
             return;
@@ -665,7 +800,11 @@ class ShuttleApp {
             });
     }
 
-    #cmdNav() {
+     /**
+      * Prints browser and navigation information.
+      * @private
+      */
+     #cmdNav() {
         const text = [
             Joomla.Text._('COM_SHUTTLE_NAV_BROWSER_INFO'),
             '',
@@ -682,7 +821,12 @@ class ShuttleApp {
         this.#printLine(text, 'output');
     }
 
-    #cmdLsUsb(options) {
+     /**
+      * Lists USB devices or requests device selection.
+      * @param {string[]} options - Parsed command options
+      * @private
+      */
+     #cmdLsUsb(options) {
         const connect = options.includes('c') || options.includes('--connect');
 
         if (!navigator.usb) {
@@ -722,7 +866,11 @@ class ShuttleApp {
         }
     }
 
-    #cmdLsGamepad() {
+     /**
+      * Lists connected gamepads.
+      * @private
+      */
+     #cmdLsGamepad() {
         if (!navigator.getGamepads) {
             this.#displayError(Joomla.Text._('COM_SHUTTLE_API_GAMEPAD_NOT_SUPPORTED'));
             return;
@@ -747,7 +895,11 @@ class ShuttleApp {
         this.#printLine(text, 'output');
     }
 
-    async #cmdLsGpu() {
+     /**
+      * Lists GPU adapter information via WebGPU.
+      * @private
+      */
+     async #cmdLsGpu() {
         if (!navigator.gpu) {
             this.#displayError(Joomla.Text._('COM_SHUTTLE_API_GPU_NOT_SUPPORTED'));
             return;
@@ -776,7 +928,11 @@ class ShuttleApp {
         this.#printLine(text, 'output');
     }
 
-    #cmdGeo() {
+     /**
+      * Prints geolocation information.
+      * @private
+      */
+     #cmdGeo() {
         if (!navigator.geolocation) {
             this.#displayError(Joomla.Text._('COM_SHUTTLE_API_GEO_NOT_SUPPORTED'));
             return;
@@ -802,7 +958,11 @@ class ShuttleApp {
         );
     }
 
-    #cmdConnection() {
+     /**
+      * Prints network connection information.
+      * @private
+      */
+     #cmdConnection() {
         if (!navigator.connection) {
             this.#displayError(Joomla.Text._('COM_SHUTTLE_API_NETWORK_NOT_SUPPORTED'));
             return;
@@ -819,7 +979,11 @@ class ShuttleApp {
         this.#printLine(text, 'output');
     }
 
-    #cmdIp() {
+     /**
+      * Prints the public IP address.
+      * @private
+      */
+     #cmdIp() {
         fetch('https://api.ipify.org?format=json')
             .then(response => {
                 if (!response.ok) {
@@ -835,7 +999,11 @@ class ShuttleApp {
             });
     }
 
-    #cmdMemory() {
+     /**
+      * Prints device memory information.
+      * @private
+      */
+     #cmdMemory() {
         if (navigator.deviceMemory) {
             this.#printLine(Joomla.Text._('COM_SHUTTLE_MEMORY_INFO') + ': ' + navigator.deviceMemory);
         } else {
@@ -843,7 +1011,11 @@ class ShuttleApp {
         }
     }
 
-    #cmdStorage() {
+     /**
+      * Prints storage usage and quota information.
+      * @private
+      */
+     #cmdStorage() {
         if (!navigator.storage || !navigator.storage.estimate) {
             this.#displayError(Joomla.Text._('COM_SHUTTLE_API_STORAGE_NOT_SUPPORTED'));
             return;
@@ -859,7 +1031,13 @@ class ShuttleApp {
         });
     }
 
-    async #fetchFolderList(folderId) {
+     /**
+      * Fetches the folder list from Cotton.
+      * @param {number} folderId - Folder ID
+      * @returns {Promise<Array>} Folder list
+      * @private
+      */
+     async #fetchFolderList(folderId) {
         const url = `${this.#config.siteUrl}index.php?option=com_cotton&view=cotton&task=cotton.items_load&format=json`;
         const form = new FormData();
         form.append(this.#config.token, 1);
@@ -877,7 +1055,13 @@ class ShuttleApp {
         return data.data.list || [];
     }
 
-    #normalizePath(rawPath) {
+     /**
+      * Normalizes a path string into segments and resolves `.` and `..`.
+      * @param {string} rawPath - Raw path input
+      * @returns {Object} Normalized path result
+      * @private
+      */
+     #normalizePath(rawPath) {
         if (typeof rawPath !== 'string') {
             return { error: 'Invalid path.' };
         }
@@ -920,7 +1104,12 @@ class ShuttleApp {
         return { path: segments.length ? segments.join('/') : '/', isAbsolute };
     }
 
-#displayHelp(commandName) {
+     /**
+      * Displays help text for a command or all commands.
+      * @param {string} [commandName] - Command name
+      * @private
+      */
+     #displayHelp(commandName) {
         let helpText = '';
 
         if (commandName && this.#commandRules[commandName]) {
@@ -934,12 +1123,12 @@ class ShuttleApp {
 
                 for (let i = 0; i < rule.options.length; i++) {
                     const opt = rule.options[i];
-                    helpText += Joomla.Text._('COM_SHUTTLE_HELP_OPTION_LINE') + '- ' + opt.name + opt.alias + ': ' + opt.description;
+                    helpText += opt.name + ' (' + opt.alias + '): ' + opt.description;
                     helpText += '\n';
                 }
             }
 
-            helpText += Joomla.Text._('COM_SHUTTLE_HELP_PARAMETERS') + rule.parameters.min + rule.parameters.max + rule.parameters.description;
+            helpText += Joomla.Text._('COM_SHUTTLE_HELP_PARAMETERS') + Joomla.Text._('COM_SHUTTLE_REQUIRES_MIN') + ': ' + rule.parameters.min + '\n' + Joomla.Text._('COM_SHUTTLE_ACCEPTS_MAX') + ': ' +  rule.parameters.max + '\n' + rule.parameters.description;
             helpText += '\n';
         } else {
             helpText += Joomla.Text._('COM_SHUTTLE_HELP_AVAILABLE_HEADER');
@@ -956,7 +1145,15 @@ class ShuttleApp {
         this.#printLine(helpText, 'info');
     }
 
-    #printLine(text, type = 'output', { html = false } = {}) {
+     /**
+      * Prints a line to the terminal output.
+      * @param {string} text - Text to print
+      * @param {string} [type='output'] - Line type
+      * @param {Object} [options] - Print options
+      * @param {boolean} [options.html=false] - Whether text is HTML
+      * @private
+      */
+     #printLine(text, type = 'output', { html = false } = {}) {
         const line = document.createElement('div');
         line.className = `shuttle-terminal__line shuttle-terminal__line--${type}`;
 
@@ -974,19 +1171,40 @@ class ShuttleApp {
         this.#scrollToBottom();
     }
 
-    #displayError(text) {
+     /**
+      * Prints an error line to the terminal output.
+      * @param {string} text - Error text
+      * @private
+      */
+     #displayError(text) {
         this.#printLine(text, 'error');
     }
 
-    #scrollToBottom() {
+     /**
+      * Scrolls the terminal output to the bottom.
+      * @private
+      */
+     #scrollToBottom() {
         this.#output.scrollTop = this.#output.scrollHeight;
     }
 
-    #isValidFolderName(name) {
+     /**
+      * Validates a folder name.
+      * @param {string} name - Folder name
+      * @returns {boolean}
+      * @private
+      */
+     #isValidFolderName(name) {
         return /^[a-zA-Z0-9_-]+$/.test(name);
     }
 
-    #formatFileSize(bytes) {
+     /**
+      * Formats a byte count into a human-readable size string.
+      * @param {number} bytes - Size in bytes
+      * @returns {string} Formatted size
+      * @private
+      */
+     #formatFileSize(bytes) {
         if (bytes === 0) return '0 B';
         const k = 1024;
         const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
@@ -994,12 +1212,21 @@ class ShuttleApp {
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     }
 
-    #cmdClear() {
+     /**
+      * Clears the terminal output and reprints the welcome banner.
+      * @private
+      */
+     #cmdClear() {
         this.#output.innerHTML = '';
         this.#printWelcome();
     }
 
-    #navigateHistory(direction) {
+     /**
+      * Navigates the command history by direction.
+      * @param {number} direction - History direction (-1 or 1)
+      * @private
+      */
+     #navigateHistory(direction) {
         if (this.#history.length === 0) {
             this.#input.value = '';
             return;

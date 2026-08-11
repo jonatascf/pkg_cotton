@@ -6,8 +6,8 @@
  */
 
 /**
- * CottonAPI - Camada de requisições ao backend
- * Interface limpa para todas as operações com com_cotton
+ * CottonAPI - Backend request layer
+ * Clean interface for all com_cotton operations
  * 
  * @class
  * @example
@@ -18,17 +18,17 @@ export class CottonAPI {
     static siteUrl = null;
     static admin = false;
     static token = null;
-    static timeout = 300000; // 5 minutos (300s) - necessário para finalize de arquivos grandes
+    static timeout = 300000; // 5 minutes (300s) - required for large file finalization
 
     /**
-     * Inicializa a API com configurações globais
+     * Initializes the API with global settings
      * @param {string} siteUrl - URL base do Joomla (ex: http://localhost/)
      * @param {string} token - Token CSRF (ex: 'token123abc')
      */
     static init(siteUrl, admin, token) {
         // Validar e normalizar siteUrl
         if (!siteUrl) {
-            throw new Error('[CottonAPI.init] siteUrl é obrigatória');
+            throw new Error('[CottonAPI.init] siteUrl is required');
         }
         
         this.siteUrl = siteUrl;
@@ -38,17 +38,17 @@ export class CottonAPI {
     }
 
     /**
-     * Helper para fazer requisições POST ao backend
+     * Helper for making POST requests to the backend
      * @private
-     * @param {string} task - Tarefa do controller (ex: 'cotton.file_create')
-     * @param {FormData} formData - Dados do formulário
+     * @param {string} task - Controller task (ex: 'cotton.file_create')
+     * @param {FormData} formData - Form data
      * @param {AbortSignal} signal - Sinal de aborto opcional
      * @returns {Promise<Object>} Resposta do servidor
      */
      static async _request(task, formData = null, signal = null) {
          const url = `${this.siteUrl}index.php?option=com_cotton&task=${task}&format=json`;
          
-         // Preparar FormData
+          // Prepare FormData
          const data = formData || new FormData();
          if (!data.has(this.token)) {
              data.append(this.token, '1');
@@ -74,22 +74,22 @@ export class CottonAPI {
 
              const result = await response.json();
              
-             if (!result.success) {
-                 throw new Error(result.message || 'Erro desconhecido no servidor');
-             }
+              if (!result.success) {
+                   throw new Error(result.message || result.error || 'Unknown server error');
+              }
 
              return result;
          } catch (error) {
              if (error.name === 'AbortError') {
                  const isExternalCancel = signal && signal.aborted;
                  if (isExternalCancel) {
-                     console.warn(`[CottonAPI] Upload cancelado pelo usuário em ${task}`);
-                     throw new Error('Upload cancelado');
-                 }
-                 console.error(`[CottonAPI] Timeout após ${this.timeout}ms em ${task}`);
-                 throw new Error(`Timeout: operação demorou mais de ${this.timeout / 1000}s`);
-             }
-             console.error(`[CottonAPI] Erro em ${task}:`, error);
+                      console.warn(`[CottonAPI] Upload cancelled by user in ${task}`);
+                      throw new Error('Upload cancelled');
+                  }
+                  console.error(`[CottonAPI] Timeout after ${this.timeout}ms in ${task}`);
+                  throw new Error(`Timeout: operation took longer than ${this.timeout / 1000}s`);
+              }
+              console.error(`[CottonAPI] Error in ${task}:`, error);
              throw error;
          }
      }
@@ -97,12 +97,12 @@ export class CottonAPI {
     // ================== FILE OPERATIONS ==================
 
     /**
-      * Faz upload de um chunk de arquivo
-      * @param {number} fileId - ID do arquivo (retornado por createFile)
-      * @param {Blob} chunk - Pedaço do arquivo
-      * @param {number} chunkIndex - Índice do chunk (0-based)
-      * @param {number} totalChunks - Total de chunks
-      * @param {string} fileName - Nome original do arquivo
+      * Uploads a file chunk
+      * @param {number} fileId - File ID (returned by createFile)
+      * @param {Blob} chunk - File chunk
+      * @param {number} chunkIndex - Chunk index (0-based)
+      * @param {number} totalChunks - Total chunks
+      * @param {string} fileName - Original file name
       * @param {AbortSignal} signal - Sinal de aborto opcional
       * @returns {Promise<Object>} Status do upload
       */
@@ -119,9 +119,9 @@ export class CottonAPI {
          return result.data;
      }
 
-     /**
-      * Cancela upload em andamento e remove arquivo temporário
-      * @param {number} fileId - ID do arquivo
+      /**
+       * Cancels an ongoing upload and removes the temporary file
+       * @param {number} fileId - File ID
       * @returns {Promise<Object>} Status do cancelamento
       */
      static async cancelUpload(fileId) {
@@ -133,10 +133,10 @@ export class CottonAPI {
      }
 
     /**
-     * Finaliza upload de arquivo após todos os chunks
-     * @param {number} fileId - ID do arquivo
+     * Finalizes file upload after all chunks
+     * @param {number} fileId - File ID
      * @param {AbortSignal} signal - Sinal de aborto opcional
-     * @returns {Promise<Object>} Status da finalização
+     * @returns {Promise<Object>} Finalization status
      */
      static async finalizeUpload(fileId, signal = null) {
          const formData = new FormData();
@@ -147,12 +147,12 @@ export class CottonAPI {
      }
 
     /**
-     * Atualiza metadados de um arquivo
-     * @param {number} fileId - ID do arquivo
-     * @param {string} fileName - Novo nome
-     * @param {string} description - Nova descrição
-     * @param {boolean} openLink - Permitir acesso via link
-     * @param {string} allowedUsers - JSON com IDs de usuários permitidos
+     * Updates file metadata
+     * @param {number} fileId - File ID
+     * @param {string} fileName - New name
+     * @param {string} description - New description
+     * @param {boolean} openLink - Allow access via link
+     * @param {string} allowedUsers - JSON with allowed user IDs
      * @returns {Promise<Object>} Dados atualizados
      */
     static async updateFile(fileId, fileName, description = '', openLink = false, allowedUsers = '') {
@@ -168,9 +168,9 @@ export class CottonAPI {
     }
 
     /**
-     * Salva conteúdo de arquivo de texto
-     * @param {number} fileId - ID do arquivo
-     * @param {string} content - Novo conteúdo
+     * Saves text file content
+     * @param {number} fileId - File ID
+     * @param {string} content - New content
      * @returns {Promise<Object>} Resultado
      */
     static async saveFileContent(fileId, content) {
@@ -184,9 +184,9 @@ export class CottonAPI {
     }
 
     /**
-     * Deleta um arquivo (para trash)
-     * @param {number} fileId - ID do arquivo
-     * @param {boolean} permanently - Se true, deleta permanentemente
+     * Deletes a file (to trash)
+     * @param {number} fileId - File ID
+     * @param {boolean} permanently - If true, deletes permanently
      * @returns {Promise<Object>} Resultado
      */
     static async deleteFile(fileId, permanently = false) {
@@ -200,9 +200,9 @@ export class CottonAPI {
     }
 
     /**
-     * Recupera um arquivo do trash
-     * @param {number} fileId - ID do arquivo
-     * @param {number} folderId - ID da pasta para restaurar
+     * Recovers a file from trash
+     * @param {number} fileId - File ID
+     * @param {number} folderId - Folder ID to restore to
      * @returns {Promise<Object>} Resultado
      */
     static async recoverFile(fileId, folderId) {
@@ -215,8 +215,8 @@ export class CottonAPI {
         return result.data;
     }
 
-    /**
-     * Restaura um arquivo da lixeira (alias para recoverFile)
+      /**
+       * Restores a file from trash (alias for recoverFile)
      * @param {number} fileId - ID do arquivo
      * @param {number} folderId - ID da pasta para restaurar
      * @returns {Promise<Object>} Resultado
@@ -225,8 +225,8 @@ export class CottonAPI {
         return this.recoverFile(fileId, folderId);
     }
 
-    /**
-     * Restaura uma pasta da lixeira
+      /**
+       * Restores a folder from trash
      * @param {number} folderId - ID da pasta
      * @param {number} parentId - ID da pasta pai para restaurar
      * @returns {Promise<Object>} Resultado
@@ -244,10 +244,10 @@ export class CottonAPI {
     // ================== FOLDER OPERATIONS ==================
 
     /**
-     * Cria uma nova pasta
-     * @param {number} parentId - ID da pasta pai
-     * @param {string} name - Nome da pasta
-     * @param {string} description - Descrição
+     * Creates a new folder
+     * @param {number} parentId - Parent folder ID
+     * @param {string} name - Folder name
+     * @param {string} description - Description
      * @returns {Promise<Object>} { id, name, parent_id, ... }
      */
     static async createFolder(parentId, name, description = '') {
@@ -261,8 +261,8 @@ export class CottonAPI {
     }
 
     /**
-     * Carrega conteúdo de uma pasta
-     * @param {number} folderId - ID da pasta
+     * Loads folder contents
+     * @param {number} folderId - Folder ID
      * @returns {Promise<Object>} { folders: [], files: [], list: hierarchy }
      */
     static async loadItems(folderId) {
@@ -274,7 +274,7 @@ export class CottonAPI {
     }
 
 /**
-      * Carrega itens da lixeira (trash = 1)
+      * Loads trash items (trash = 1)
       * @returns {Promise<Object>} { folders_trash: [], files_trash: [] }
       */
     static async loadTrash() {
@@ -283,10 +283,10 @@ export class CottonAPI {
     }
 
     /**
-     * Atualiza informações da pasta
-     * @param {number} folderId - ID da pasta
-     * @param {string} name - Novo nome
-     * @param {string} description - Nova descrição
+     * Updates folder information
+     * @param {number} folderId - Folder ID
+     * @param {string} name - New name
+     * @param {string} description - New description
      * @returns {Promise<Object>} Dados atualizados
      */
     static async updateFolder(folderId, name, description = '') {
@@ -300,9 +300,9 @@ export class CottonAPI {
     }
 
     /**
-     * Deleta uma pasta (para trash)
-     * @param {number} folderId - ID da pasta
-     * @param {boolean} permanently - Se true, deleta permanentemente
+     * Deletes a folder (to trash)
+     * @param {number} folderId - Folder ID
+     * @param {boolean} permanently - If true, deletes permanently
      * @returns {Promise<Object>} Resultado
      */
     static async deleteFolder(folderId, permanently = false) {
@@ -316,9 +316,9 @@ export class CottonAPI {
     }
 
     /**
-     * Recupera uma pasta do trash
-     * @param {number} folderId - ID da pasta
-     * @param {number} parentId - ID da pasta pai para restaurar
+     * Recovers a folder from trash
+     * @param {number} folderId - Folder ID
+     * @param {number} parentId - Parent folder ID to restore to
      * @returns {Promise<Object>} Resultado
      */
     static async recoverFolder(folderId, parentId) {
@@ -333,9 +333,9 @@ export class CottonAPI {
     }
 
     /**
-     * Move uma pasta para outro pai
-     * @param {number} folderId - ID da pasta a mover
-     * @param {number} newParentId - ID da nova pasta pai
+     * Moves a folder to another parent
+     * @param {number} folderId - Folder ID to move
+     * @param {number} newParentId - New parent folder ID
      * @returns {Promise<Object>} Resultado
      */
     static async moveFolder(folderId, newParentId) {
@@ -348,9 +348,9 @@ export class CottonAPI {
     }
 
     /**
-     * Move um arquivo para outra pasta
-     * @param {number} fileId - ID do arquivo
-     * @param {number} folderId - ID da pasta destino
+     * Moves a file to another folder
+     * @param {number} fileId - File ID
+     * @param {number} folderId - Destination folder ID
      * @returns {Promise<Object>} Resultado
      */
     static async moveFile(fileId, folderId) {
@@ -363,25 +363,25 @@ export class CottonAPI {
     }
 
     /**
-     * Obtém URL de preview/abertura de um arquivo
-     * @param {number} fileId - ID do arquivo
-     * @returns {string} URL para abrir o arquivo inline
+     * Gets a file preview/open URL
+     * @param {number} fileId - File ID
+     * @returns {string} URL to open the file inline
      */
     static getFilePreviewUrl(fileId) {
         return `${this.siteUrl}index.php?option=com_cotton&task=cotton.open&file_id=${fileId}`;
     }
 
 /**
-      * Obtém URL de download de um arquivo
-      * @param {number} fileId - ID do arquivo
-      * @returns {string} URL para download do arquivo
+      * Gets a file download URL
+      * @param {number} fileId - File ID
+      * @returns {string} URL to download the file
       */
     static getFileDownloadUrl(fileId) {
         return `${this.siteUrl}index.php?option=com_cotton&task=cotton.download&file_id=${fileId}&format=raw&${this.token}=1`;
     }
 
     /**
-      * Limpa toda a lixeira
+     * Clears the entire trash
       * @returns {Promise<Object>} Resultado
       */
     static async clearTrash() {
@@ -391,23 +391,6 @@ export class CottonAPI {
 
     static async loadTree() {
         const result = await this._request('cotton.tree_load');
-        return result.data;
-    }
-
-    // ================== EDITOR OPERATIONS ==================
-
-    /**
-     * Abre um arquivo no editor de texto
-     * @param {number} fileId - ID do arquivo
-     * @param {string} fileExt - Extensão do arquivo
-     * @returns {Promise<Object>} { content: string, mode: 'javascript'|'css'|... }
-     */
-    static async openEditor(fileId, fileExt) {
-        const formData = new FormData();
-        formData.append('file_id', fileId);
-        formData.append('file_ext', fileExt);
-
-        const result = await this._request('cotton.open_editor', formData);
         return result.data;
     }
 

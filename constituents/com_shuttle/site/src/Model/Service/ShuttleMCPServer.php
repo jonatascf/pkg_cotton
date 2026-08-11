@@ -76,7 +76,7 @@ class ShuttleMCPServer
 			$this->toolCache[$command] = $tool;
 
 			if ($command === 'cat') {
-				error_log('[Shuttle MCP] cat tool schema: ' . json_encode($tool, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+				//error_log('[Shuttle MCP] cat tool schema: ' . json_encode($tool, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
 			}
 		}
 	}
@@ -296,9 +296,9 @@ class ShuttleMCPServer
 	public function listTools(): array
 	{
 		if (!empty($this->toolCache)) {
-			error_log('[Shuttle MCP] listTools cache hit, count=' . count($this->toolCache));
+			//error_log('[Shuttle MCP] listTools cache hit, count=' . count($this->toolCache));
 			if (isset($this->toolCache['cat'])) {
-				error_log('[Shuttle MCP] cat schema: ' . json_encode($this->toolCache['cat'], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+				//error_log('[Shuttle MCP] cat schema: ' . json_encode($this->toolCache['cat'], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
 			}
 			return [
 				'jsonrpc' => '2.0',
@@ -371,7 +371,7 @@ class ShuttleMCPServer
 			}
 		}
 
-		error_log('[Shuttle MCP] callTool: ' . $name . ' args=' . json_encode($arguments) . ' normalized=' . json_encode($normalizedArguments));
+		//error_log('[Shuttle MCP] callTool: ' . $name . ' args=' . json_encode($arguments) . ' normalized=' . json_encode($normalizedArguments));
 
 		try {
 			$result = match ($name) {
@@ -981,7 +981,7 @@ class ShuttleMCPServer
 		}
 
 		if ($folderTarget === '' || $name === '') {
-			error_log('[Shuttle MCP] cotton-create missing args. received=' . json_encode($arguments));
+			//error_log('[Shuttle MCP] cotton-create missing args. received=' . json_encode($arguments));
 			return [
 				'error' => 'cotton-create requires folder and name. Received: ' . json_encode($arguments),
 				'code' => -32602,

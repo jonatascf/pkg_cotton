@@ -7,9 +7,9 @@
 
 /**
  * Weaver MCP Panel
- * 
- * Interface do painel MCP no Weaver Editor.
- * Integra o cliente MCP com o assistente KILO CODE.
+ *
+ * MCP panel interface for the Weaver Editor.
+ * Integrates the MCP client with the KILO CODE assistant.
  */
 
 const WeaverMCPPanel = (() => {
@@ -26,6 +26,10 @@ const WeaverMCPPanel = (() => {
 	let mcpContent = null;
 	let currentAbortController = null;
 
+	/**
+	 * Initializes the MCP panel UI and connections.
+	 * @returns {Promise<boolean>} Whether initialization succeeded
+	 */
 	async function init() {
 		container = document.getElementById(PANEL_ID);
 		if (!container) {
@@ -38,6 +42,9 @@ const WeaverMCPPanel = (() => {
 		return true;
 	}
 
+	/**
+	 * Renders the MCP panel DOM structure.
+	 */
 	function render() {
 		if (!container) return;
 
@@ -107,6 +114,9 @@ const WeaverMCPPanel = (() => {
 		loadSettings();
 	}
 
+	/**
+	 * Attaches UI event listeners to panel controls.
+	 */
 	function attachListeners() {
 		const sendBtn = container.querySelector('#weaver_mcp_send');
 		const input = container.querySelector('#weaver_mcp_input');
@@ -127,9 +137,16 @@ const WeaverMCPPanel = (() => {
 		}
 	}
 
+	/**
+	 * Placeholder for settings UI toggle.
+	 * @param {boolean} show - Whether to show settings
+	 */
 	function showSettings(show) {
 	}
 
+	/**
+	 * Handles the MCP reset action: aborts active requests, clears messages, and reinitializes.
+	 */
 	async function handleReset() {
 		if (isProcessing) {
 			if (currentAbortController) {
@@ -179,6 +196,9 @@ const WeaverMCPPanel = (() => {
 		}
 	}
 
+	/**
+	 * Initializes the MCP client, AI assistant, and panel state.
+	 */
 	async function initMCP() {
 		if (mcpClient && mcpClient.isInitialized()) {
 			return;
@@ -243,6 +263,10 @@ const WeaverMCPPanel = (() => {
 		}
 	}
 
+	/**
+	 * Populates the model dropdown with available models.
+	 * @param {Array} models - Model list from MCP
+	 */
 	function loadModelList(models) {
 		const modelSelect = container.querySelector('#weaver_mcp_model');
 		if (!modelSelect || !mcpClient || !mcpClient.isInitialized()) {
@@ -270,6 +294,9 @@ const WeaverMCPPanel = (() => {
 		}
 	}
 
+	/**
+	 * Refreshes MCP context by reloading tools, resources, and prompts.
+	 */
 	async function refreshMCPContext() {
 		if (!mcpClient || !mcpClient.isInitialized()) {
 			return;
@@ -305,6 +332,9 @@ const WeaverMCPPanel = (() => {
 		}
 	}
 
+	/**
+	 * Handles sending a user message and streaming the assistant response.
+	 */
 	async function handleSend() {
 		const input = container.querySelector('#weaver_mcp_input');
 		if (!input || isProcessing) return;
@@ -558,6 +588,12 @@ const WeaverMCPPanel = (() => {
 		}
 	}
 
+	/**
+	 * Handles frontend commands emitted by the AI assistant.
+	 * @param {string} text - Command text
+	 * @param {Object} [metadata] - Command metadata
+	 * @returns {Promise<Object|null>} Command result
+	 */
 	async function handleWeaverCommand(text) {
 		const parts = text.match(/^\/?([\w:-]+)(?:\s+(.*))?$/);
 		if (!parts) return null;
@@ -589,7 +625,7 @@ const WeaverMCPPanel = (() => {
 					return { output: Joomla.Text._('COM_WEAVER_CMD_NO_ACTIVE_TAB') };
 				}
 				return {
-					output: Joomla.Text._('COM_WEAVER_CMD_ACTIVE_TAB') + `${tab.name} (id=${tab.id}, dirty=${tab.dirty ? 'sim' : 'não'})`
+					output: Joomla.Text._('COM_WEAVER_CMD_ACTIVE_TAB') + `${tab.name} (id=${tab.id}, dirty=${tab.dirty ? 'yes' : 'no'})`
 				};
 			}
 
@@ -683,17 +719,17 @@ const WeaverMCPPanel = (() => {
 			case 'help':
 			case 'h': {
 				const commands = [
-					'weaver:tabs - Lista as abas abertas no editor',
-					'weaver:active - Mostra a aba ativa',
-					'weaver:open <fileId> - Abre uma aba pelo ID',
-					'weaver:create-file <folderId> <name> - Cria um arquivo',
-					'weaver:create-folder <folderId> <name> - Cria uma pasta',
-					'weaver:save - Salva a aba ativa',
-					'weaver:edit <fileId> <content> - Edita o conteudo de uma aba',
-					'weaver:root - Mostra o ID da pasta raiz',
-					'help - Mostra esta mensagem de ajuda',
+					'weaver:tabs - Lists open tabs in the editor',
+					'weaver:active - Shows the active tab',
+					'weaver:open <fileId> - Opens a tab by ID',
+					'weaver:create-file <folderId> <name> - Creates a file',
+					'weaver:create-folder <folderId> <name> - Creates a folder',
+					'weaver:save - Saves the active tab',
+					'weaver:edit <fileId> <content> - Edits the content of a tab',
+					'weaver:root - Shows the root folder ID',
+					'help - Shows this help message',
 				];
-				return { output: 'Comandos disponiveis:\n' + commands.join('\n') };
+				return { output: 'Available commands:\n' + commands.join('\n') };
 			}
 
 			default:
@@ -701,6 +737,9 @@ const WeaverMCPPanel = (() => {
 		}
 	}
 
+	/**
+	 * Saves the selected model and mode to localStorage and AI assistant state.
+	 */
 	async function saveSettings() {
 		const modelInput = container.querySelector('#weaver_mcp_model');
 		const modeInput = container.querySelector('#weaver_mcp_mode');
@@ -726,6 +765,9 @@ const WeaverMCPPanel = (() => {
 		enableInput(true);
 	}
 
+	/**
+	 * Loads saved model and mode settings from localStorage.
+	 */
 	function loadSettings() {
 		const modelInput = container.querySelector('#weaver_mcp_model');
 		const modeInput = container.querySelector('#weaver_mcp_mode');
@@ -753,21 +795,41 @@ const WeaverMCPPanel = (() => {
 		enableInput(true);
 	}
 
+	/**
+	 * Appends a user message to the panel history and DOM.
+	 * @param {string} text - User message text
+	 */
 	function addUserMessage(text) {
 		messageHistory.push({ role: 'user', text });
 		appendMessage('user', text);
 	}
 
+	/**
+	 * Appends an assistant message to the panel history and DOM.
+	 * @param {string} text - Assistant message text
+	 * @param {boolean} [returnId=false] - Whether to return the message DOM ID
+	 * @returns {string|undefined} Message DOM ID when returnId is true
+	 */
 	function addAssistantMessage(text, returnId = false) {
 		messageHistory.push({ role: 'assistant', text });
 		const messageId = appendMessage('assistant', text);
 		return returnId ? messageId : undefined;
 	}
 
+	/**
+	 * Appends a system message to the panel DOM.
+	 * @param {string} text - System message text
+	 * @param {boolean} [isError=false] - Whether this is an error message
+	 */
 	function addSystemMessage(text, isError = false) {
 		appendMessage('system', text, isError);
 	}
 
+	/**
+	 * Updates an existing assistant message in the DOM.
+	 * @param {string} messageId - Message DOM ID
+	 * @param {string} text - New message text
+	 */
 	function updateAssistantMessage(messageId, text) {
 		const messageEl = document.getElementById(messageId);
 		if (!messageEl) return;
@@ -783,6 +845,14 @@ const WeaverMCPPanel = (() => {
 		}
 	}
 
+	/**
+	 * Appends a message node to the panel message history.
+	 * @param {string} role - Message role: user, assistant, system, tool-call, tool-result
+	 * @param {string} text - Message text
+	 * @param {boolean} [isError=false] - Whether this is an error message
+	 * @param {Object} [extra={}] - Extra data for tool-call messages
+	 * @returns {string|null} Message DOM ID
+	 */
 	function appendMessage(role, text, isError = false, extra = {}) {
 		const messagesContainer = container.querySelector('#weaver_mcp_messages');
 		if (!messagesContainer) {
@@ -835,6 +905,9 @@ const WeaverMCPPanel = (() => {
 		return messageId;
 	}
 
+	/**
+	 * Scrolls the message container to the bottom.
+	 */
 	function scrollToBottom() {
 		const messagesContainer = container.querySelector('#weaver_mcp_messages');
 		if (messagesContainer) {
@@ -842,6 +915,10 @@ const WeaverMCPPanel = (() => {
 		}
 	}
 
+	/**
+	 * Updates the status bar text.
+	 * @param {string} text - Status text
+	 */
 	function setStatus(text) {
 		const statusEl = container.querySelector('#weaver_mcp_status');
 		if (statusEl) {
@@ -849,6 +926,10 @@ const WeaverMCPPanel = (() => {
 		}
 	}
 
+	/**
+	 * Enables or disables the input and send controls.
+	 * @param {boolean} enabled - Whether controls should be enabled
+	 */
 	function enableInput(enabled) {
 		const input = container.querySelector('#weaver_mcp_input');
 		const sendBtn = container.querySelector('#weaver_mcp_send');
@@ -857,6 +938,9 @@ const WeaverMCPPanel = (() => {
 		if (sendBtn) sendBtn.disabled = !enabled;
 	}
 
+	/**
+	 * Updates the send button disabled state based on processing state.
+	 */
 	function updateSendButton() {
 		const sendBtn = container.querySelector('#weaver_mcp_send');
 		if (sendBtn) {
@@ -864,20 +948,36 @@ const WeaverMCPPanel = (() => {
 		}
 	}
 
+	/**
+	 * Escapes HTML and converts newlines to <br>.
+	 * @param {string} text - Input text
+	 * @returns {string} Escaped HTML
+	 */
 	function escapeHtml(text) {
 		const div = document.createElement('div');
 		div.textContent = text;
 		return div.innerHTML.replace(/\n/g, '<br>');
 	}
 
+	/**
+	 * Checks whether the MCP panel is currently open.
+	 * @returns {boolean}
+	 */
 	function isPanelOpen() {
 		return isOpen;
 	}
 
+	/**
+	 * Gets the current message history.
+	 * @returns {Array} Message history
+	 */
 	function getMessageHistory() {
 		return messageHistory;
 	}
 
+	/**
+	 * Clears the message history and DOM messages.
+	 */
 	function clearMessages() {
 		messageHistory = [];
 		const messagesContainer = container.querySelector('#weaver_mcp_messages');
@@ -886,10 +986,18 @@ const WeaverMCPPanel = (() => {
 		}
 	}
 
+	/**
+	 * Gets the Weaver editor app instance.
+	 * @returns {Object|null} WeaverEditor instance
+	 */
 	function getWeaverApp() {
 		return window.WeaverEditor || null;
 	}
 
+	/**
+	 * Gets the current tree root folder ID from the Weaver app.
+	 * @returns {Promise<number|null>} Root folder ID
+	 */
 	async function getWeaverTreeRootFolderId() {
 		const weaverApp = getWeaverApp();
 		if (!weaverApp || typeof weaverApp.getTreeRootFolderId !== 'function') {
@@ -898,6 +1006,10 @@ const WeaverMCPPanel = (() => {
 		return weaverApp.getTreeRootFolderId();
 	}
 
+	/**
+	 * Gets the list of open tabs from the Weaver app.
+	 * @returns {Promise<Array>} Open tabs
+	 */
 	async function getWeaverOpenTabs() {
 		const weaverApp = getWeaverApp();
 		if (!weaverApp || typeof weaverApp.getOpenTabs !== 'function') {
@@ -906,6 +1018,10 @@ const WeaverMCPPanel = (() => {
 		return weaverApp.getOpenTabs();
 	}
 
+	/**
+	 * Gets the currently active tab from the Weaver app.
+	 * @returns {Promise<Object|null>} Active tab
+	 */
 	async function getWeaverActiveTab() {
 		const weaverApp = getWeaverApp();
 		if (!weaverApp || typeof weaverApp.getActiveTab !== 'function') {
@@ -914,6 +1030,11 @@ const WeaverMCPPanel = (() => {
 		return weaverApp.getActiveTab();
 	}
 
+	/**
+	 * Opens a tab in the Weaver editor by file ID.
+	 * @param {number} fileId - File ID
+	 * @returns {Promise<Object>} Open result
+	 */
 	async function weaverOpenTab(fileId) {
 		const weaverApp = getWeaverApp();
 		if (!weaverApp || typeof weaverApp.openTab !== 'function') {
@@ -922,6 +1043,13 @@ const WeaverMCPPanel = (() => {
 		return weaverApp.openTab(fileId);
 	}
 
+	/**
+	 * Creates a file in the Weaver editor.
+	 * @param {number} folderId - Destination folder ID
+	 * @param {string} fileName - File name
+	 * @param {string} [content=''] - Initial content
+	 * @returns {Promise<Object>} Created file data
+	 */
 	async function weaverCreateFile(folderId, fileName, content = '') {
 		const weaverApp = getWeaverApp();
 		if (!weaverApp || typeof weaverApp.createFile !== 'function') {
@@ -930,6 +1058,12 @@ const WeaverMCPPanel = (() => {
 		return weaverApp.createFile(folderId, fileName, content);
 	}
 
+	/**
+	 * Creates a folder in the Weaver editor.
+	 * @param {number} folderId - Parent folder ID
+	 * @param {string} folderName - Folder name
+	 * @returns {Promise<Object>} Created folder data
+	 */
 	async function weaverCreateFolder(folderId, folderName) {
 		const weaverApp = getWeaverApp();
 		if (!weaverApp || typeof weaverApp.createFolder !== 'function') {
@@ -938,6 +1072,11 @@ const WeaverMCPPanel = (() => {
 		return weaverApp.createFolder(folderId, folderName);
 	}
 
+	/**
+	 * Saves the active tab content via the Weaver app.
+	 * @param {string} content - Content to save
+	 * @returns {Promise<Object>} Save result
+	 */
 	async function weaverSaveActiveTab(content) {
 		const weaverApp = getWeaverApp();
 		if (!weaverApp || typeof weaverApp.saveActiveTab !== 'function') {
@@ -946,6 +1085,10 @@ const WeaverMCPPanel = (() => {
 		return weaverApp.saveActiveTab(content);
 	}
 
+	/**
+	 * Refreshes the Weaver folder tree.
+	 * @returns {Promise<void>}
+	 */
 	async function weaverRefreshTree() {
 		const weaverApp = getWeaverApp();
 		if (!weaverApp || typeof weaverApp.refreshTree !== 'function') {
@@ -956,6 +1099,10 @@ const WeaverMCPPanel = (() => {
 
 	let weaverResourceContents = {};
 
+	/**
+	 * Auto-reads Weaver-specific MCP resources before sending a prompt.
+	 * @returns {Promise<void>}
+	 */
 	async function autoReadWeaverResources() {
 		if (!mcpClient || !mcpClient.isInitialized()) {
 			return;
@@ -1003,6 +1150,10 @@ const WeaverMCPPanel = (() => {
 		}
 	}
 
+	/**
+	 * Gets the cached Weaver resource contents.
+	 * @returns {Object} Cached resource contents
+	 */
 	function getWeaverResourceContents() {
 		return weaverResourceContents;
 	}

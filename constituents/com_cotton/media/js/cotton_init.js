@@ -5,16 +5,12 @@
  * @license GNU/AGPL v3 https://www.gnu.org/licenses/agpl-3.0.html
  */
 
-// Arquivo de inicialização do Cotton
-
 import { CottonUIManager } from './CottonUIManager.js';
 
 const config = Joomla.getOptions('cotton_config');
 const limits = Joomla.getOptions('cotton_limits');
 const tree = Joomla.getOptions('cotton_tree');
 const items = Joomla.getOptions('cotton_items');
-
-console.log('[cotton_init] Configurações carregadas:', { config, tree, items, limits });
 
 (function(){
     try {
@@ -24,7 +20,6 @@ console.log('[cotton_init] Configurações carregadas:', { config, tree, items, 
             return;
         }
 
-        // Instancia e inicializa o manager
         const manager = new CottonUIManager(container, {
             siteUrl: config.siteUrl,
             admin: config.admin,

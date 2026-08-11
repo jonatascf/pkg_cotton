@@ -38,7 +38,9 @@ class CottonController extends BaseController {
 	 */
 	public function folder_create() {
 		try {
-			if (!Session::checkToken()) {
+			$currentuser = Factory::getApplication()->getIdentity();
+			
+			if (!$currentuser->get("id") || !Session::checkToken()) {
 				echo new JsonResponse(null, Text::_('JINVALID_TOKEN'), true);
 				return;
 			}
@@ -64,7 +66,9 @@ class CottonController extends BaseController {
 	 */
 	public function items_load() {
 		try {
-			if (!Session::checkToken()) {
+			$currentuser = Factory::getApplication()->getIdentity();
+			
+			if (!$currentuser->get("id") || !Session::checkToken()) {
 				echo new JsonResponse(null, Text::_('JINVALID_TOKEN'), true);
 				return;
 			}
@@ -88,7 +92,9 @@ class CottonController extends BaseController {
  	 */
  	public function trash_load() {
 		try {
-			if (!Session::checkToken()) {
+			$currentuser = Factory::getApplication()->getIdentity();
+			
+			if (!$currentuser->get("id") || !Session::checkToken()) {
 				echo new JsonResponse(null, Text::_('JINVALID_TOKEN'), true);
 				return;
 			}
@@ -108,7 +114,9 @@ class CottonController extends BaseController {
 	 */
 	public function folder_update() {
 		try {
-			if (!Session::checkToken()) {
+			$currentuser = Factory::getApplication()->getIdentity();
+			
+			if (!$currentuser->get("id") || !Session::checkToken()) {
 				echo new JsonResponse(null, Text::_('JINVALID_TOKEN'), true);
 				return;
 			}
@@ -136,7 +144,9 @@ class CottonController extends BaseController {
 	 */
 	public function tree_load() {
 		try {
-			if (!Session::checkToken()) {
+			$currentuser = Factory::getApplication()->getIdentity();
+			
+			if (!$currentuser->get("id") || !Session::checkToken()) {
 				echo new JsonResponse(null, Text::_('JINVALID_TOKEN'), true);
 				return;
 			}
@@ -160,7 +170,9 @@ class CottonController extends BaseController {
 	 */
 	public function item_delete() {
 		try {
-			if (!Session::checkToken()) {
+			$currentuser = Factory::getApplication()->getIdentity();
+			
+			if (!$currentuser->get("id") || !Session::checkToken()) {
 				echo new JsonResponse(null, Text::_('JINVALID_TOKEN'), true);
 				return;
 			}
@@ -186,7 +198,9 @@ class CottonController extends BaseController {
 	 */
 	public function clear_trash() {
 		try {
-			if (!Session::checkToken()) {
+			$currentuser = Factory::getApplication()->getIdentity();
+			
+			if (!$currentuser->get("id") || !Session::checkToken()) {
 				echo new JsonResponse(null, Text::_('JINVALID_TOKEN'), true);
 				return;
 			}
@@ -207,7 +221,9 @@ class CottonController extends BaseController {
 	 */
 	public function item_recover() {
 		try {
-			if (!Session::checkToken()) {
+			$currentuser = Factory::getApplication()->getIdentity();
+			
+			if (!$currentuser->get("id") || !Session::checkToken()) {
 				echo new JsonResponse(null, Text::_('JINVALID_TOKEN'), true);
 				return;
 			}
@@ -236,7 +252,9 @@ class CottonController extends BaseController {
 	 */
 	public function file_create() {
 		try {
-			if (!Session::checkToken()) {
+			$currentuser = Factory::getApplication()->getIdentity();
+			
+			if (!$currentuser->get("id") || !Session::checkToken()) {
 				echo new JsonResponse(null, Text::_('JINVALID_TOKEN'), true);
 				return;
 			}
@@ -263,7 +281,9 @@ class CottonController extends BaseController {
 	 */
 	public function file_upload() {
 		try {
-			if (!Session::checkToken()) {
+			$currentuser = Factory::getApplication()->getIdentity();
+			
+			if (!$currentuser->get("id") || !Session::checkToken()) {
 				echo new JsonResponse(null, Text::_('JINVALID_TOKEN'), true);
 				return;
 			}
@@ -286,7 +306,9 @@ class CottonController extends BaseController {
 
     public function file_finalize() {
     	try {
-    		if (!Session::checkToken()) {
+    		$currentuser = Factory::getApplication()->getIdentity();
+    		
+    		if (!$currentuser->get("id") || !Session::checkToken()) {
     			echo new JsonResponse(null, Text::_('JINVALID_TOKEN'), true);
     			return;
     		}
@@ -304,7 +326,9 @@ class CottonController extends BaseController {
 
     public function file_cancel() {
     	try {
-    		if (!Session::checkToken()) {
+    		$currentuser = Factory::getApplication()->getIdentity();
+    		
+    		if (!$currentuser->get("id") || !Session::checkToken()) {
     			echo new JsonResponse(null, Text::_('JINVALID_TOKEN'), true);
     			return;
     		}
@@ -386,7 +410,9 @@ class CottonController extends BaseController {
 	 */
 	public function file_save() {
 		try {
-			if (!Session::checkToken()) {
+			$currentuser = Factory::getApplication()->getIdentity();
+			
+			if (!$currentuser->get("id") || !Session::checkToken()) {
 				echo new JsonResponse(null, Text::_('JINVALID_TOKEN'), true);
 				return;
 			}
@@ -411,7 +437,9 @@ class CottonController extends BaseController {
 	 */
 	public function file_update() {
 		try {
-			if (!Session::checkToken()) {
+			$currentuser = Factory::getApplication()->getIdentity();
+			
+			if (!$currentuser->get("id") || !Session::checkToken()) {
 				echo new JsonResponse(null, Text::_('JINVALID_TOKEN'), true);
 				return;
 			}
@@ -439,16 +467,19 @@ class CottonController extends BaseController {
 	 */
 	public function open_editor() {
 		try {
-			if (!Session::checkToken()) {
+			$currentuser = Factory::getApplication()->getIdentity();
+			
+			if (!$currentuser->get("id") || !Session::checkToken()) {
 				echo new JsonResponse(null, Text::_('JINVALID_TOKEN'), true);
 				return;
 			}
 
 			$input = Factory::getApplication()->input;
 			$file_id = $input->get('file_id', 0, 'INT');
+			$file_ext = $input->get('file_ext', '', 'STRING');
 
-			$handler = new FileHandler();
-			$result = $handler->openFile($file_id);
+			$model = $this->getModel('Cotton','Site', ['ignore_request' => true]);
+			$result = $model->open_editor($file_id, $file_ext);
 			echo new JsonResponse($result);
 		} catch (Exception $e) {
 			echo new JsonResponse($e);
@@ -464,7 +495,9 @@ class CottonController extends BaseController {
 	 */
 	public function folder_delete() {
 		try {
-			if (!Session::checkToken()) {
+			$currentuser = Factory::getApplication()->getIdentity();
+			
+			if (!$currentuser->get("id") || !Session::checkToken()) {
 				echo new JsonResponse(null, Text::_('JINVALID_TOKEN'), true);
 				return;
 			}
@@ -495,7 +528,10 @@ class CottonController extends BaseController {
 	 */
 	public function file_delete() {
 		try {
-			if (!Session::checkToken()) {
+			$currentuser = Factory::getApplication()->getIdentity();
+			$user_id = (int) $currentuser->get("id");
+
+			if (!$currentuser->get("id") || !Session::checkToken()) {
 				echo new JsonResponse(null, Text::_('JINVALID_TOKEN'), true);
 				return;
 			}
@@ -525,7 +561,9 @@ class CottonController extends BaseController {
 	 */
 	public function create_new() {
 		try {
-			if (!Session::checkToken()) {
+			$currentuser = Factory::getApplication()->getIdentity();
+			
+			if (!$currentuser->get("id") || !Session::checkToken()) {
 				echo new JsonResponse(null, Text::_('JINVALID_TOKEN'), true);
 				return;
 			}
@@ -552,7 +590,9 @@ class CottonController extends BaseController {
 	 */
 	public function folder_move() {
 		try {
-			if (!Session::checkToken()) {
+			$currentuser = Factory::getApplication()->getIdentity();
+			
+			if (!$currentuser->get("id") || !Session::checkToken()) {
 				echo new JsonResponse(null, Text::_('JINVALID_TOKEN'), true);
 				return;
 			}
@@ -582,7 +622,9 @@ class CottonController extends BaseController {
 	 */
 	public function file_move() {
 		try {
-			if (!Session::checkToken()) {
+			$currentuser = Factory::getApplication()->getIdentity();
+			
+			if (!$currentuser->get("id") || !Session::checkToken()) {
 				echo new JsonResponse(null, Text::_('JINVALID_TOKEN'), true);
 				return;
 			}
@@ -612,7 +654,9 @@ class CottonController extends BaseController {
 	 */
 	public function articles_list() {
 		try {
-			if (!Session::checkToken()) {
+			$currentuser = Factory::getApplication()->getIdentity();
+			
+			if (!$currentuser->get("id") || !Session::checkToken()) {
 				echo new JsonResponse(null, Text::_('JINVALID_TOKEN'), true);
 				return;
 			}

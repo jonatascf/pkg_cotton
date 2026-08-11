@@ -6,13 +6,13 @@
  */
 
 /**
- * CottonStorage - Gerenciador de estado centralizado
- * Implementa padrão Observer para reatividade
+ * CottonStorage - Centralized state manager
+ * Implements Observer pattern for reactivity
  * 
  * @class
  * @example
  * CottonStorage.init();
- * CottonStorage.onStateChange('fileAdded', (file) => console.log('Arquivo adicionado:', file));
+ * CottonStorage.onStateChange('fileAdded', (file) => console.log('File added:', file));
  * CottonStorage.addFile(fileObj);
  */
 export class CottonStorage {
@@ -29,10 +29,10 @@ export class CottonStorage {
     };
 
     static #listeners = new Map(); // event -> [callback1, callback2, ...]
-    static #isNotifying = false;   // previne recursão de notificações
+    static #isNotifying = false;   // prevents recursive notifications
 
     /**
-     * Inicializa o storage
+     * Initializes storage
      */
     static init() {
         this.#state.isInitialized = true;
@@ -42,16 +42,16 @@ export class CottonStorage {
     // ================== GETTERS ==================
 
     /**
-     * Retorna estado completo (somente leitura)
-     * @returns {Object} Estado congelado
+     * Returns full state (read-only)
+     * @returns {Object} Frozen state
      */
     static getState() {
         return Object.freeze({ ...this.#state });
     }
 
     /**
-     * Obtém pasta pelo ID
-     * @param {number} folderId 
+     * Gets folder by ID
+     * @param {number} folderId
      * @returns {Object|null}
      */
     static getFolder(folderId) {
@@ -59,8 +59,8 @@ export class CottonStorage {
     }
 
     /**
-     * Obtém arquivo pelo ID
-     * @param {number} fileId 
+     * Gets file by ID
+     * @param {number} fileId
      * @returns {Object|null}
      */
     static getFile(fileId) {
@@ -68,7 +68,7 @@ export class CottonStorage {
     }
 
     /**
-     * Lista todas as pastas
+     * Lists all folders
      * @returns {Array}
      */
     static getAllFolders() {
@@ -76,7 +76,7 @@ export class CottonStorage {
     }
 
     /**
-     * Lista todos os arquivos
+     * Lists all files
      * @returns {Array}
      */
     static getAllFiles() {
@@ -84,8 +84,8 @@ export class CottonStorage {
     }
 
     /**
-     * Lista arquivos de uma pasta específica
-     * @param {number} folderId 
+     * Lists files in a specific folder
+     * @param {number} folderId
      * @returns {Array}
      */
     static getFilesInFolder(folderId) {
@@ -93,8 +93,8 @@ export class CottonStorage {
     }
 
     /**
-     * Obtém subpastas de uma pasta
-     * @param {number} parentId 
+     * Gets subfolders of a folder
+     * @param {number} parentId
      * @returns {Array}
      */
     static getSubfolders(parentId) {
@@ -102,7 +102,7 @@ export class CottonStorage {
     }
 
     /**
-     * Obtém pasta ativa
+     * Gets active folder
      * @returns {Object|null}
      */
     static getActiveFolder() {
@@ -110,7 +110,7 @@ export class CottonStorage {
     }
 
     /**
-     * Obtém arquivo selecionado
+     * Gets selected file
      * @returns {Object|null}
      */
     static getSelectedFile() {
@@ -118,8 +118,8 @@ export class CottonStorage {
     }
 
     /**
-     * Obtém progresso de upload
-     * @param {number} fileId 
+     * Gets upload progress
+     * @param {number} fileId
      * @returns {Object} { progress, status, error? }
      */
     static getUploadProgress(fileId) {
@@ -129,20 +129,20 @@ export class CottonStorage {
     // ================== SETTERS ==================
 
     /**
-     * Define pasta ativa
-     * @param {number} folderId 
+     * Sets active folder
+     * @param {number} folderId
      */
     static setActiveFolder(folderId) {
         if (this.#state.activeFolderId !== folderId) {
             this.#state.activeFolderId = folderId;
-            this.#state.selectedFile = null; // Limpar seleção ao mudar pasta
+            this.#state.selectedFile = null; // Clear selection when changing folder
             this.#notifyListeners('activeFolderChanged', folderId);
         }
     }
 
     /**
-     * Define arquivo selecionado
-     * @param {number|null} fileId 
+     * Sets selected file
+     * @param {number|null} fileId
      */
     static setSelectedFile(fileId) {
         if (this.#state.selectedFile !== fileId) {
@@ -152,8 +152,8 @@ export class CottonStorage {
     }
 
     /**
-     * Define pasta selecionada
-     * @param {number|null} folderId 
+     * Sets selected folder
+     * @param {number|null} folderId
      */
     static setSelectedFolder(folderId) {
         if (this.#state.selectedFolder !== folderId) {
@@ -193,8 +193,8 @@ export class CottonStorage {
     // ================== FOLDER OPERATIONS ==================
 
     /**
-     * Adiciona pasta ao storage
-     * @param {Object} folder 
+     * Adds folder to storage
+     * @param {Object} folder
      */
     static addFolder(folder) {
         this.#state.folders[folder.id] = folder;
@@ -202,9 +202,9 @@ export class CottonStorage {
     }
 
     /**
-     * Atualiza pasta
-     * @param {number} folderId 
-     * @param {Object} updates - campos a atualizar
+     * Updates folder
+     * @param {number} folderId
+     * @param {Object} updates - fields to update
      */
     static updateFolder(folderId, updates) {
         if (this.#state.folders[folderId]) {
@@ -217,8 +217,8 @@ export class CottonStorage {
     }
 
     /**
-     * Remove pasta
-     * @param {number} folderId 
+     * Removes folder
+     * @param {number} folderId
      */
     static removeFolder(folderId) {
         const folder = this.#state.folders[folderId];
@@ -227,8 +227,8 @@ export class CottonStorage {
     }
 
     /**
-     * Carrega múltiplas pastas
-     * @param {Array} folders 
+     * Loads multiple folders
+     * @param {Array} folders
      */
     static loadItemss(folders) {
         this.#state.folders = {};
@@ -239,8 +239,8 @@ export class CottonStorage {
     // ================== FILE OPERATIONS ==================
 
     /**
-     * Adiciona arquivo ao storage
-     * @param {Object} file 
+     * Adds file to storage
+     * @param {Object} file
      */
     static addFile(file) {
         this.#state.files[file.id] = file;
@@ -248,9 +248,9 @@ export class CottonStorage {
     }
 
     /**
-     * Atualiza arquivo
-     * @param {number} fileId 
-     * @param {Object} updates 
+     * Updates file
+     * @param {number} fileId
+     * @param {Object} updates
      */
     static updateFile(fileId, updates) {
         if (this.#state.files[fileId]) {
@@ -263,8 +263,8 @@ export class CottonStorage {
     }
 
     /**
-     * Remove arquivo
-     * @param {number} fileId 
+     * Removes file
+     * @param {number} fileId
      */
     static removeFile(fileId) {
         const file = this.#state.files[fileId];
@@ -274,8 +274,8 @@ export class CottonStorage {
     }
 
     /**
-     * Carrega múltiplos arquivos
-     * @param {Array} files 
+     * Loads multiple files
+     * @param {Array} files
      */
     static loadFiles(files) {
         this.#state.files = {};
@@ -284,9 +284,9 @@ export class CottonStorage {
     }
 
     /**
-     * Move arquivo para outra pasta
-     * @param {number} fileId 
-     * @param {number} newFolderId 
+     * Moves file to another folder
+     * @param {number} fileId
+     * @param {number} newFolderId
      */
     static moveFile(fileId, newFolderId) {
         if (this.#state.files[fileId]) {
@@ -302,11 +302,11 @@ export class CottonStorage {
     // ================== UPLOAD OPERATIONS ==================
 
     /**
-     * Define progresso de upload
-     * @param {number} fileId 
+     * Sets upload progress
+     * @param {number} fileId
      * @param {number} progress - 0-100
      * @param {string} status - 'pending'|'uploading'|'done'|'error'
-     * @param {string} error - mensagem de erro (opcional)
+     * @param {string} error - error message (optional)
      */
     static setUploadProgress(fileId, progress, status = 'uploading', error = null) {
         this.#state.uploads[fileId] = {
@@ -323,32 +323,32 @@ export class CottonStorage {
     }
 
     /**
-     * Marca upload como completo
-     * @param {number} fileId 
+     * Marks upload as complete
+     * @param {number} fileId
      */
     static completeUpload(fileId) {
         this.setUploadProgress(fileId, 100, 'done');
     }
 
     /**
-     * Marca upload como erro
-     * @param {number} fileId 
-     * @param {string} errorMessage 
+     * Marks upload as error
+     * @param {number} fileId
+     * @param {string} errorMessage
      */
     static failUpload(fileId, errorMessage) {
         this.setUploadProgress(fileId, 0, 'error', errorMessage);
     }
 
     /**
-     * Limpa upload do registro
-     * @param {number} fileId 
+     * Clears upload from registry
+     * @param {number} fileId
      */
     static clearUpload(fileId) {
         delete this.#state.uploads[fileId];
     }
 
     /**
-     * Obtém todos os uploads em andamento
+     * Gets all ongoing uploads
      * @returns {Object}
      */
     static getPendingUploads() {
@@ -364,10 +364,10 @@ export class CottonStorage {
     // ================== TRASH OPERATIONS ==================
 
     /**
-     * Move item para trash
+     * Moves item to trash
      * @param {string} type - 'file'|'folder'
-     * @param {number} id 
-     * @param {Object} item - objeto a guardar
+     * @param {number} id
+     * @param {Object} item - object to store
      */
     static moveToTrash(type, id, item) {
         if (!this.#state.trash[type]) {
@@ -378,9 +378,9 @@ export class CottonStorage {
     }
 
     /**
-     * Recupera item do trash
-     * @param {string} type 
-     * @param {number} id 
+     * Restores item from trash
+     * @param {string} type
+     * @param {number} id
      * @returns {Object|null}
      */
     static restoreFromTrash(type, id) {
@@ -394,7 +394,7 @@ export class CottonStorage {
     }
 
     /**
-     * Limpa trash
+     * Empties trash
      * @param {string} type - 'file'|'folder'|'all'
      */
     static emptyTrash(type = 'all') {
@@ -407,7 +407,7 @@ export class CottonStorage {
     }
 
     /**
-     * Obtém itens no trash
+     * Gets items in trash
      * @param {string} type - 'file'|'folder'|'all'
      * @returns {Object}
      */
@@ -421,13 +421,13 @@ export class CottonStorage {
     // ================== OBSERVERS ==================
 
     /**
-     * Registra listener para mudanças de estado
-     * @param {string} event - nome do evento
-     * @param {Function} callback - função a executar
+     * Registers listener for state changes
+     * @param {string} event - event name
+     * @param {Function} callback - function to execute
      */
     static onStateChange(event, callback) {
         if (typeof callback !== 'function') {
-            console.error('[CottonStorage] Callback deve ser uma função');
+            console.error('[CottonStorage] Callback must be a function');
             return;
         }
 
@@ -437,7 +437,7 @@ export class CottonStorage {
 
         this.#listeners.get(event).push(callback);
 
-        // Retornar função para unsubscribe
+         // Return function to unsubscribe
         return () => {
             const callbacks = this.#listeners.get(event);
             const index = callbacks.indexOf(callback);
@@ -448,9 +448,9 @@ export class CottonStorage {
     }
 
     /**
-     * Remove um listener específico
-     * @param {string} event 
-     * @param {Function} callback 
+     * Removes a specific listener
+     * @param {string} event
+     * @param {Function} callback
      */
     static removeListener(event, callback) {
         if (this.#listeners.has(event)) {
@@ -463,27 +463,27 @@ export class CottonStorage {
     }
 
     /**
-     * Remove todos os listeners de um evento
-     * @param {string} event 
+     * Removes all listeners for an event
+     * @param {string} event
      */
     static clearEvent(event) {
         this.#listeners.delete(event);
     }
 
     /**
-     * Remove todos os listeners
+     * Removes all listeners
      */
     static clearAllListeners() {
         this.#listeners.clear();
     }
 
     /**
-     * Notifica listeners (privado)
+     * Notifies listeners (private)
      * @private
      */
     static #notifyListeners(event, data) {
         if (this.#isNotifying) {
-            return; // Previne notificações recursivas
+            return; // Prevents recursive notifications
         }
 
         this.#isNotifying = true;
@@ -493,7 +493,7 @@ export class CottonStorage {
                 try {
                     callback(data);
                 } catch (error) {
-                    console.error(`[CottonStorage] Erro ao notificar evento "${event}":`, error);
+                    console.error(`[CottonStorage] Error notifying event "${event}":`, error);
                 }
             });
         }
@@ -502,8 +502,8 @@ export class CottonStorage {
     }
 
     /**
-     * Sincroniza estado com dados do backend
-     * @param {Object} data - dados retornados do servidor
+     * Syncs state with backend data
+     * @param {Object} data - data returned from server
      */
     static sync(data) {
         if (data.folders) {
@@ -520,7 +520,7 @@ export class CottonStorage {
     }
 
     /**
-     * Reseta storage para estado inicial
+     * Resets storage to initial state
      */
     static reset() {
         this.#state = {

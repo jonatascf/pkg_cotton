@@ -40,6 +40,25 @@
 			required="true"
 		/>
 		<field
+			name="cotton_max_file_size"
+			type="list"
+			label="COM_COTTON_CUSTOM_MAX_FILE_SIZE_LABEL"
+			description="COM_COTTON_CUSTOM_MAX_FILE_SIZE_DESC"
+			default="0"
+			>
+			<option value="8388608">8MB</option>
+			<option value="16777216">16MB</option>
+			<option value="33554432">32MB</option>
+			<option value="67108864">64MB</option>
+			<option value="134217728">128MB</option>
+			<option value="268435456">256MB</option>
+			<option value="536870912">512MB</option>
+			<option value="1073741824">1GB</option>
+			<option value="2147483648">2GB</option>
+			<option value="4294967296">4GB</option>
+			<option value="0">COM_COTTON_UNLIMITED</option>
+		</field>
+		<field
 			name="cotton_limit_space"
 			type="list"
 			label="COM_COTTON_CUSTOM_LIMIT_SPACE_LABEL"

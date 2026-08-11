@@ -226,6 +226,7 @@ final class Cotton extends CMSPlugin
 		Text::script('COM_COTTON_OK');
 		Text::script('COM_COTTON_ERROR');
 		Text::script('COM_COTTON_ERROR_MAX_FILESIZE');
+		Text::script('COM_COTTON_ERROR_LIMIT_SPACE');
 		Text::script('COM_COTTON_TYPE');
 		Text::script('COM_COTTON_CREATED');
 		
@@ -315,6 +316,9 @@ final class Cotton extends CMSPlugin
 		Text::script('COM_COTTON_OPTIONAL');
 		Text::script('COM_COTTON_SEARCH_PLACEHOLDER');
 		Text::script('COM_COTTON_SELECT_FILES');
+		Text::script('COM_COTTON_USED_SPACE');
+		Text::script('COM_COTTON_LIMIT_SPACE');
+		Text::script('COM_COTTON_AVAILABLE_SPACE');
 
 		Text::script('PLG_EDITORS_XTD_COTTON_PICKER_TITLE');
 		Text::script('PLG_EDITORS_XTD_COTTON_ERROR_MODAL_NOT_AVAILABLE');

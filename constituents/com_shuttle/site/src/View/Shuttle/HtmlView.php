@@ -100,6 +100,8 @@ class HtmlView extends BaseHtmlView {
 		Text::script('COM_SHUTTLE_COMMAND_NOT_FOUND');
 		Text::script('COM_SHUTTLE_COMMAND_PARAM_MIN');
 		Text::script('COM_SHUTTLE_COMMAND_PARAM_MAX');
+		Text::script('COM_SHUTTLE_REQUIRES_MIN');
+		Text::script('COM_SHUTTLE_ACCEPTS_MAX');
 		Text::script('COM_SHUTTLE_API_MEDIA_NOT_SUPPORTED');
 		Text::script('COM_SHUTTLE_NO_MEDIA_DEVICES');
 		Text::script('COM_SHUTTLE_ERROR_LISTING_MEDIA');
@@ -133,7 +135,6 @@ class HtmlView extends BaseHtmlView {
 		Text::script('COM_SHUTTLE_HELP_COMMAND_HEADER');
 		Text::script('COM_SHUTTLE_HELP_OPTIONS');
 		Text::script('COM_SHUTTLE_HELP_PARAMETERS');
-		Text::script('COM_SHUTTLE_HELP_OPTION_LINE');
 		Text::script('COM_SHUTTLE_ERROR_REQUEST_FAILED');
 		Text::script('COM_SHUTTLE_NAV_BROWSER_NAME');
 		Text::script('COM_SHUTTLE_NAV_BROWSER_VERSION');

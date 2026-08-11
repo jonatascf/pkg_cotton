@@ -16,7 +16,7 @@ import { CottonTree } from './CottonTree.js';
 import { CottonTabs } from './CottonTabs.js';
 
 
-// CottonUIManager - Orquestra a interface principal do Cotton
+// CottonUIManager - Orchestrates the main Cotton interface
 
 
 export class CottonUIManager {
@@ -27,15 +27,16 @@ export class CottonUIManager {
     #listeners = {};
     #tree = null;
     #modalManager = null;
+    #statusTimeout = null;
 
     /**
-     * Construtor
-     * @param {string|HTMLElement} container - Seletor ou elemento DOM
-     * @param {Object} options - Configurações
-     *   @param {string} options.siteUrl - URL base da API
-     *   @param {boolean} options.admin - Indica se é modo administrativo
-     *   @param {string} options.token - Token de autenticação
-     *   @param {Function} options.onReady - Callback quando carregado
+     * Constructor
+     * @param {string|HTMLElement} container - DOM selector or element
+     * @param {Object} options - Settings
+     *   @param {string} options.siteUrl - Base API URL
+     *   @param {boolean} options.admin - Indicates if admin mode
+     *   @param {string} options.token - Auth token
+     *   @param {Function} options.onReady - Callback when loaded
      */
     constructor(container, options = {}) {
         if (typeof container === 'string') {
@@ -47,7 +48,7 @@ export class CottonUIManager {
         }
 
         if (!this.#container) {
-            throw new Error('[CottonUIManager] Container não encontrado');
+            throw new Error('[CottonUIManager] Container not found');
         }
 
         this.#options = {
@@ -65,11 +66,19 @@ export class CottonUIManager {
 
         if (this.#options.limits?.max_filesize && CottonUploader) {
             const safeChunk = Math.floor(this.#options.limits.max_filesize * 0.9);
-            const maxChunk = 20 * 1024 * 1024; // 20MB máximo
+            const maxChunk = 20 * 1024 * 1024; // 20MB max
             CottonUploader.setChunkSize(Math.min(safeChunk, maxChunk));
+            CottonUploader.setMaxFileSize(this.#options.limits.cotton_max_filesize);
         }
 
-        // Inicializar estado
+        if (this.#options.limits && CottonUploader) {
+            const limitSpace = this.#options.limits.limit_space || 0;
+            const usedSpace = this.#options.limits.used_space || 0;
+            const availableSpace = limitSpace > 0 ? Math.max(0, limitSpace - usedSpace) : Infinity;
+            CottonUploader.setAvailableSpace(availableSpace);
+        }
+
+        // Initialize state
         this.#state = {
             treeData: options.treeData || null,
             itemsData: options.itemsData || null,
@@ -78,22 +87,23 @@ export class CottonUIManager {
             config: {},
             viewMode: 'list',
             searchQuery: '',
-            expandedFolders: new Set(),  // Armazena IDs das pastas expandidas
+            expandedFolders: new Set(),  // Stores expanded folder IDs
             itemSort: {
                 field: 'name',
                 direction: 'asc'
             }
         };
 
-        // Inicializar CottonAPI globalmente
+        // Initialize CottonAPI globally
         CottonAPI.init(this.#options.siteUrl, this.#options.admin, this.#options.token);
         
-        // Inicializar gerenciador de modais
+        // Initialize modal manager
         this.#modalManager = new CottonModalManager();
+
     }
 
     /**
-     * Inicializa a interface
+     * Initializes the interface
      */
 async initialize() {
         try {
@@ -150,7 +160,7 @@ async initialize() {
     }
 
     /**
-     * Renderiza interface HTML
+     * Renders HTML interface
      * @private
      */
     #renderUI() {
@@ -207,6 +217,7 @@ async initialize() {
 
         const contentArea = document.createElement('section');
         contentArea.className = 'cotton-items-container';
+        contentArea.innerHTML = `<div id="cotton-items-status" class="cotton-items-status"></div>`;
         
         const itemInfo = document.createElement('aside');
         itemInfo.className = 'cotton-item-info-container';
@@ -218,8 +229,10 @@ async initialize() {
 
         const footer = document.createElement('footer');
         footer.className = 'cotton-footer';
-        footer.innerHTML = `<div class="cotton-status"></div>
-                            <div class="text-muted small cotton-items-count">0 ${Joomla.Text._('COM_COTTON_ITEMS')}</div>`;
+        footer.innerHTML = `
+            <div id="cotton-footer-space" class="cotton-footer-space"></div>
+            <div id="cotton-footer-items" class="cotton-items-count">0 ${Joomla.Text._('COM_COTTON_ITEMS')}</div>
+        `;
 
         if (!this.#options.pickMode) this.#container.appendChild(header);
         this.#container.appendChild(toolBar);
@@ -227,7 +240,7 @@ async initialize() {
         this.#container.appendChild(mainContent);
         if (!this.#options.pickMode) this.#container.appendChild(footer);
         
-        // Referências aos elementos
+        // References to elements
         this.#components = {
             header: this.#container.querySelector('.cotton-header'),
             maximize: this.#container.querySelector('.cotton-header-maximize'),
@@ -235,20 +248,22 @@ async initialize() {
             trash: this.#container.querySelector('.cotton-trash'),
             items: this.#container.querySelector('.cotton-items-container'),
             searchInput: this.#container.querySelector('.cotton-search-input'),
-            itemsCount: this.#container.querySelector('.cotton-items-count'),
-            status: this.#container.querySelector('.cotton-status'),
+            itemsCount: this.#container.querySelector('#cotton-footer-items'),
+            status: this.#container.querySelector('#cotton-items-status'),
+            spaceInfo: this.#container.querySelector('#cotton-footer-space'),
             pathInput: this.#container.querySelector('.cotton-path-input'),
             info: this.#container.querySelector('.cotton-item-info-container')
         };
         this.#resetPanelItemInfo();
+        this.#updateSpaceInfo();
     }
 
     /**
-     * Anexa event listeners
+     * Attaches event listeners
      * @private
      */
     #attachEventListeners() {
-        // Botões de ação do header
+        // Header action buttons
         this.#container.querySelector('.cotton-upload-btn')?.addEventListener('click', () => {
             const input = document.createElement('input');
             input.type = 'file';
@@ -290,7 +305,7 @@ async initialize() {
             }
         });
 
-        // Botões de visualização (lista/grid)
+        // View buttons (list/grid)
         this.#container.querySelector('.cotton-view-list')?.addEventListener('click', (e) => {
             this.#container.querySelector('.cotton-view-list')?.classList.add('active');
             this.#container.querySelector('.cotton-view-grid')?.classList.remove('active');
@@ -303,7 +318,7 @@ async initialize() {
             this.#setViewMode('grid');
         });
 
-        // Busca
+        // Search
         this.#components.searchInput?.addEventListener('input', (e) => {
             this.#state.searchQuery = e.target.value;
             this.#renderItemsList();
@@ -323,7 +338,7 @@ async initialize() {
             });
         }
 
-        // Listeners do storage
+        // Storage listeners
         CottonStorage.onStateChange('foldersSet', () => {
             this.#renderItemsList();
         });
@@ -425,8 +440,26 @@ async initialize() {
         `;
     }
 
+    #updateSpaceInfo() {
+        const spaceInfo = this.#components.spaceInfo;
+        if (!spaceInfo) return;
+
+        const limits = this.#options.limits || {};
+        const limitSpace = limits.limit_space || 0;
+        const usedSpace = limits.used_space || 0;
+
+        if (limitSpace > 0) {
+            const available = Math.max(0, limitSpace - usedSpace);
+            spaceInfo.textContent = `${CottonHelper.formatSize(usedSpace)} / ${CottonHelper.formatSize(limitSpace)}`;
+            spaceInfo.title = `${Joomla.Text._('COM_COTTON_USED_SPACE') || 'Used'}: ${CottonHelper.formatSize(usedSpace)}\n${Joomla.Text._('COM_COTTON_LIMIT_SPACE') || 'Limit'}: ${CottonHelper.formatSize(limitSpace)}\n${Joomla.Text._('COM_COTTON_AVAILABLE_SPACE') || 'Available'}: ${CottonHelper.formatSize(available)}`;
+        } else {
+            spaceInfo.textContent = `${CottonHelper.formatSize(usedSpace)} / \u221E`;
+            spaceInfo.title = `${Joomla.Text._('COM_COTTON_USED_SPACE') || 'Used'}: ${CottonHelper.formatSize(usedSpace)}`;
+        }
+    }
+
     /**
-     * Define modo de visualização
+     * Sets view mode
      * @private
      */
     #setViewMode(mode) {
@@ -446,13 +479,13 @@ async initialize() {
     }
 
     /**
-     * Manipula upload de arquivo
+     * Handles file upload
      * @private
      */
     async #handleUpload(files = null) {
         try {
             if (this.#state.activeFolderId < 0) {
-                this.#showError('Não é possível enviar arquivos na lixeira');
+                this.#showError('Cannot upload files to trash');
                 return null;
             }
 
@@ -461,12 +494,12 @@ async initialize() {
             const hasPreSelectedFiles = filesToUpload.length > 0;
 
             if (!hasPreSelectedFiles) {
-                this.#showError('Nenhum arquivo selecionado para upload');
+                this.#showError('No files selected for upload');
                 return null;
             }
 
             const modal = this.openModal({
-                title: 'Enviar Arquivos',
+                title: 'Upload Files',
                 icon: CottonHelper.getMimeIcon('folder-open', { size: 'fa-1x', colored: true }),
                 width: '400px',
                 height: hasPreSelectedFiles ? 'auto' : '280px',
@@ -513,11 +546,11 @@ async initialize() {
                     <span class="upload-file-percent">0%</span>
                     <span class="upload-file-finalizing" style="display: none;">
                         <div class="spinner-border spinner-border-sm text-primary" role="status">
-                            <span class="visually-hidden">Finalizando</span>
+                            <span class="visually-hidden">Finalizing</span>
                         </div>
-                        <span>Finalizando</span>
+                        <span>Finalizing</span>
                     </span>
-                    <span class="upload-file-ready" style="display: none; color: var(--cot-green); font-size: 0.75rem; font-weight: 600;">Pronto</span>
+                        <span class="upload-file-ready" style="display: none; color: var(--cot-green); font-size: 0.75rem; font-weight: 600;">Ready</span>
                 </div>
             `;
             filesList.appendChild(item);
@@ -555,14 +588,14 @@ async initialize() {
                     if (finalizing) finalizing.style.display = 'none';
                     if (readyText) readyText.style.display = 'inline';
                 } catch (error) {
-                    if (error.message === 'Upload cancelado') {
+                    if (error.message === 'Upload cancelled') {
                         throw error;
                     }
-                    console.error('Erro ao enviar:', file.name, error);
+                    console.error('Error uploading:', file.name, error);
                     failed.push(`${file.name}: ${error.message}`);
                     completed++;
-                    if (fill) fill.style.width = '100%';
-                    if (percentText) percentText.textContent = 'Erro';
+                    if (fill) fill.style.width = '0%';
+                    if (percentText) percentText.textContent = 'Upload error:' + error.message;
                 }
             }
         };
@@ -574,7 +607,7 @@ async initialize() {
 
         await Promise.all(workers);
 
-        if (failed.some(item => item.includes('Upload cancelado'))) {
+        if (failed.some(item => item.includes('Upload cancelled'))) {
             return;
         }
 
@@ -596,12 +629,13 @@ async initialize() {
             await this.#loadItems(targetFolderId);
             modal.close();
             this.#showSuccess(`${completed}/${files.length} ${Joomla.Text._('COM_COTTON_FILE_UPLOADED')}`);
+            this.#updateSpaceInfo();
         }
 
         if (failed.length > 0) {
-            const details = failed.slice(0, 3).map(item => CottonHelper.escapeHtml(item)).join('<br>');
+            const details = failed.slice(0, 3).map(item => CottonHelper.escapeHtml(item)).join(', ');
             const suffix = failed.length > 3 ? `<br>... ${Joomla.Text._('COM_COTTON_MORE_FILES').replace('{count}', failed.length - 3)}` : '';
-            this.#showError(`${Joomla.Text._('COM_COTTON_UPLOAD_FAILED').replace('{count}', failed.length)}:<br>${details}${suffix}`);
+            this.#showError(`${Joomla.Text._('COM_COTTON_UPLOAD_FAILED').replace('{count}', failed.length)}: ${details}${suffix}`);
         }
     }
 
@@ -630,16 +664,16 @@ async initialize() {
     }
 
     /**
-     * Manipula criação de pasta
+     * Handles folder creation
      * @private
      */
     async #handleCreateFolder() {
-        // Usar o modal existente de criar pasta
+        // Use existing create folder modal
         this.showCreateFolderModal();
     }
 
     /**
-     * Manipula atualização
+     * Handles refresh
      * @private
      */
     async #handleRefresh() {
@@ -656,7 +690,7 @@ async initialize() {
     }
 
     /**
-     * Atualiza a lista de pastas da árvore
+     * Updates the folder tree list
      * @private
      */
 async #loadTreeFolders() {
@@ -666,13 +700,13 @@ async #loadTreeFolders() {
             CottonStorage.setTreeFolders(this.#state.treeData?.tree || []);
             this.#tree.render(this.#state.treeData);
         } catch (error) {
-            console.error('[CottonUIManager] Erro ao atualizar árvore de pastas:', error);
+            console.error('[CottonUIManager] Error updating folder tree:', error);
             this.#showError(Joomla.Text._('COM_COTTON_ERROR_LOAD_FOLDER') + ': ' + error.message);
         }
     }
 
     /**
-     * Carrega pasta
+     * Loads folder
      * @private
      */
     async #loadItems(folderId) {
@@ -694,14 +728,16 @@ async #loadTreeFolders() {
 
             if (data.n_folders !== undefined && Array.isArray(data.folders) && 'n_files' in data) {
                 this.#state.itemsData = data;
+                this.#options.limits = data.limits || this.#options.limits;
             }
 
             CottonStorage.sync(data);
             this.#renderItemsList();
             this.#updatePathInput();
+            this.#updateSpaceInfo();
             this.#setViewMode(this.#state.viewMode);
         } catch (error) {
-            console.error('[CottonUIManager] Erro ao carregar pasta:', error);
+            console.error('[CottonUIManager] Error loading folder:', error);
             this.#showError(Joomla.Text._('COM_COTTON_ERROR_LOAD_FOLDER') + ': ' + error.message);
         }
     }
@@ -717,7 +753,7 @@ async #loadTreeFolders() {
     }
 
     /**
-     * Carrega a lixeira
+     * Loads trash
      * @private
      */
     async #loadTrash() {
@@ -731,7 +767,7 @@ async #loadTreeFolders() {
                  this.#components.info.style.display = '';
              }
              const data = await CottonAPI.loadTrash();
-            this.#state.activeFolderId = -1;  // -1 indica modo lixeira
+            this.#state.activeFolderId = -1;  // -1 indicates trash mode
             this.#emit('folder:selected', {
                 id: -1,
                 path: Joomla.Text._('COM_COTTON_TRASH')
@@ -755,19 +791,25 @@ async #loadTreeFolders() {
             this.#renderItemsList();
             this.#setViewMode(this.#state.viewMode);
             this.#updatePathInput();
+            this.#updateSpaceInfo();
         } catch (error) {
-            console.error('[CottonUIManager] Erro ao carregar lixeira:', error);
+            console.error('[CottonUIManager] Error loading trash:', error);
             this.#showError(Joomla.Text._('COM_COTTON_ERROR_LOAD_TRASH') + ': ' + error.message);
         }
     }
 
     /**
-     * Renderiza lista de pastas e arquivos
+     * Renders folders and files list
      * @private
      */
     #renderItemsList() {
         const container = this.#components.items;
+        const status = this.#components.status;
+
         container.innerHTML = '';
+        if (status) {
+            container.appendChild(status);
+        }
 
         const folders = this.#filterItems(this.#state.itemsData?.folders || [], this.#state.searchQuery);
         const files = this.#filterItems(this.#state.itemsData?.files || [], this.#state.searchQuery);
@@ -792,6 +834,9 @@ async #loadTreeFolders() {
                     <span>${hasActiveSearch ? `${Joomla.Text._('COM_COTTON_NO_ITEMS_SEARCH')} "${CottonHelper.escapeHtml(this.#state.searchQuery.trim())}"` : (isTrashMode ? Joomla.Text._('COM_COTTON_NO_ITEMS_TRASH') : Joomla.Text._('COM_COTTON_NO_ITEMS_FOLDER'))}</span>
                 </div>
             `;
+            if (status) {
+                container.appendChild(status);
+            }
             return;
         }
 
@@ -1117,7 +1162,7 @@ async #loadTreeFolders() {
         sizeCell.className = 'cotton-col-size';
         if (type === 'folder') {
             const folderCount = (item.n_folders || 0) + (item.n_files || 0);
-            const sizeText = folderCount > 0 ? `${item.n_folders || 0} pasta${((item.n_folders || 0) !== 1 ? 's' : '')}, ${item.n_files || 0} arquivo${((item.n_files || 0) !== 1 ? 's' : '')}` : 'Vazio';
+            const sizeText = folderCount > 0 ? `${item.n_folders || 0} folder${((item.n_folders || 0) !== 1 ? 's' : '')}, ${item.n_files || 0} file${((item.n_files || 0) !== 1 ? 's' : '')}` : 'Empty';
             sizeCell.textContent = sizeText;
         } else {
             sizeCell.textContent = CottonHelper.formatSize(this.#getFileSize(item));
@@ -1150,7 +1195,7 @@ async #loadTreeFolders() {
     }
 
     /**
-     * Manipula abertura de item no duplo clique
+     * Handles item opening on double click
      * @private
      */
     async #handleItemOpen(item) {
@@ -1208,7 +1253,7 @@ async #loadTreeFolders() {
                     loop: false
                 });
 
-                mediaHandler.on('loaded', (metadata) => console.log('[CottonMediaHandler] Loaded:', metadata));
+                mediaHandler.on('loaded', null);
                 mediaHandler.on('error', (error) => console.error('[CottonMediaHandler] Error:', error));
 
                 const mediaElement = await mediaHandler.createMediaElement();
@@ -1221,7 +1266,7 @@ async #loadTreeFolders() {
                 mediaContent = `
                     <div class="cotton-media-viewer-content text-center py-5">
                         ${CottonHelper.getMimeIcon(mimeType, { size: 'fa-4x', colored: true })}
-                        <p class="mt-3 text-danger">Erro ao carregar pré-visualização: ${CottonHelper.escapeHtml(error.message)}</p>
+                        <p class="mt-3 text-danger">Error loading preview: ${CottonHelper.escapeHtml(error.message)}</p>
                     </div>
                 `;
                 mediaHandler = null;
@@ -1230,7 +1275,7 @@ async #loadTreeFolders() {
             mediaContent = `
                 <div class="cotton-media-viewer-content text-center py-5">
                     ${CottonHelper.getMimeIcon(mimeType, { size: 'fa-4x', colored: true })}
-                    <p class="mt-3 text-muted">Visualização não disponível para este tipo de arquivo.</p>
+                    <p class="mt-3 text-muted">Preview not available for this file type.</p>
                 </div>
             `;
         }
@@ -1267,14 +1312,14 @@ async #loadTreeFolders() {
         try {
             const link = `${this.#options.siteUrl}index.php?option=com_cotton&task=cotton.open&file_id=${file.id}&format=raw`;
             await navigator.clipboard.writeText(link);
-            this.#showSuccess('Link copiado para a área de transferência!');
+            this.#showSuccess('Link copied to clipboard!');
         } catch (err) {
-            this.#showError('Erro ao copiar link');
+            this.#showError('Error copying link');
         }
     }
 
     /**
-     * Filtra itens por nome, descrição, caminho ou extensão
+     * Filters items by name, description, path, or extension
      * @private
      */
     #filterItems(items, query) {
@@ -1302,20 +1347,20 @@ async #loadTreeFolders() {
     }
 
     /**
-     * Seleciona arquivo
+     * Selects file
      * @private
      */
 async #selectItem(item, rowElement = null) {
          this.#setActiveItem(rowElement, item.id);
          this.#emit('file:selected', {file: item, pickMode: this.#options.pickMode});
 
-         // Renderizar info
+          // Render info
          await this.#renderFileInfo(item);
 
      }
 
     /**
-     * Renderiza informações do item (arquivo ou pasta)
+     * Renders item information (file or folder)
      * @private
      */
     async #renderFileInfo(item) {
@@ -1324,7 +1369,7 @@ async #selectItem(item, rowElement = null) {
         const icon = this.#getMimeIcon(isFolder ? 'folder' : this.#getMimeTypeForFile(item), { size: 'fa-2x', colored: true });
 
         const sizeInfo = isFolder 
-            ? `${item.n_folders || 0} pasta${(item.n_folders || 0) !== 1 ? 's' : ''}, ${item.n_files || 0} arquivo${(item.n_files || 0) !== 1 ? 's' : ''}`
+            ? `${item.n_folders || 0} folder${(item.n_folders || 0) !== 1 ? 's' : ''}, ${item.n_files || 0} file${(item.n_files || 0) !== 1 ? 's' : ''}`
             : this.#formatSize(item.size);
 
         panel.innerHTML = `
@@ -1414,7 +1459,7 @@ async #selectItem(item, rowElement = null) {
     }
 
     /**
-     * Carrega arquivo no editor
+     * Loads file in editor
      * @private
      */
     async #loadFileInEditor(file) {
@@ -1426,7 +1471,7 @@ async #selectItem(item, rowElement = null) {
             fileName: file.name,
             readOnly: false,
             onSave: () => {
-                this.#showSuccess('Arquivo salvo com sucesso');
+                this.#showSuccess('File saved successfully');
             }
         });
 
@@ -1434,12 +1479,12 @@ async #selectItem(item, rowElement = null) {
             await editor.load();
             editor.focus();
         } catch (error) {
-            panel.innerHTML = `<div class="cotton-error">Erro ao carregar editor: ${error.message}</div>`;
+            panel.innerHTML = `<div class="cotton-error">Error loading editor: ${error.message}</div>`;
         }
     }
 
     /**
-     * Carrega preview do arquivo
+     * Loads file preview
      * @private
      */
     async #loadFilePreview(file) {
@@ -1468,7 +1513,7 @@ async #selectItem(item, rowElement = null) {
     }
 
     /**
-     * Faz download de arquivo
+     * Downloads file
      * @private
      */
     #downloadFile(file) {
@@ -1488,36 +1533,36 @@ async #selectItem(item, rowElement = null) {
         const link = `${this.#options.siteUrl}index.php?option=com_cotton&task=cotton.open&file_id=${file.id}`;
         try {
             await navigator.clipboard.writeText(link);
-            this.#showSuccess('Link copiado para clipboard');
+            this.#showSuccess('Link copied to clipboard');
         } catch (error) {
-            this.#showError('Erro ao copiar: ' + error.message);
+            this.#showError('Error copying: ' + error.message);
         }
     }
 
     /**
-     * Alterna painel direito
+     * Toggles right panel
      * @private
      */
     #switchPanel(tabName) {
-        // Remover active
+        // Remove active
         this.#container.querySelectorAll('.cotton-panel-tab').forEach(tab => {
             tab.classList.remove('active');
         });
 
-        // Adicionar active
+        // Add active
         this.#container.querySelector(`[data-tab="${tabName}"]`)?.classList.add('active');
 
-        // Mostrar painel correspondente
+        // Show corresponding panel
         this.#components.panelInfo.style.display = tabName === 'info' ? '' : 'none';
         this.#components.panelEditor.style.display = tabName === 'editor' ? '' : 'none';
         this.#components.panelPreview.style.display = tabName === 'preview' ? '' : 'none';
     }
 
     /**
-     * Obtém ícone FontAwesome para tipo de arquivo via CottonHelper
+     * Gets FontAwesome icon for file type via CottonHelper
      * @private
-     * @param {string} mimeType - Tipo MIME do arquivo
-     * @returns {string} HTML do ícone FontAwesome
+     * @param {string} mimeType - File MIME type
+     * @returns {string} FontAwesome icon HTML
      */
     #getMimeIcon(mimeType, options = {}) {
         return CottonUIManager.getMimeIcon(mimeType, options);
@@ -1535,10 +1580,10 @@ async #selectItem(item, rowElement = null) {
     static getPermissionIcon(item) {
         const openLink = parseInt(item?.open_link ?? 0, 10) || 0;
         if (openLink === 1) {
-            return '<span class="cotton-perm-icon cotton-perm-icon-limited" title="Usuários específicos"><i class="fa-solid fa-users"></i></span>';
+            return '<span class="cotton-perm-icon cotton-perm-icon-limited" title="Specific users"><i class="fa-solid fa-users"></i></span>';
         }
         if (openLink === 2) {
-            return '<span class="cotton-perm-icon cotton-perm-icon-public" title="Público"><i class="fa-solid fa-globe"></i></span>';
+            return '<span class="cotton-perm-icon cotton-perm-icon-public" title="Public"><i class="fa-solid fa-globe"></i></span>';
         }
         return '';
     }
@@ -1601,7 +1646,7 @@ async #selectItem(item, rowElement = null) {
     }
 
     /**
-     * Formata tamanho de arquivo (delega ao CottonHelper)
+     * Formats file size (delegates to CottonHelper)
      * @private
      */
     #formatSize(bytes) {
@@ -1609,7 +1654,7 @@ async #selectItem(item, rowElement = null) {
     }
 
     /**
-     * Escapa caracteres HTML (delega ao CottonHelper)
+     * Escapes HTML characters (delegates to CottonHelper)
      * @private
      */
     #escapeHtml(text) {
@@ -1651,38 +1696,42 @@ async #selectItem(item, rowElement = null) {
     }
 
     /**
-     * Mostra mensagem de sucesso
+     * Shows success message
      * @private
      */
     #showSuccess(message) {
-        if (this.#components.status) {
-            this.#components.status.innerHTML = `<i class="icon-checkmark"></i> ${message}`;
-            this.#components.status.className = 'cotton-status text-success';
-            setTimeout(() => {
-                this.#components.status.innerHTML = Joomla.Text._('COM_COTTON_READY');
-                this.#components.status.className = 'cotton-status text-muted';
-            }, 3000);
+        const status = this.#components.status;
+        if (!status) return;
+        if (this.#statusTimeout) {
+            clearTimeout(this.#statusTimeout);
         }
+        status.textContent = message;
+        status.className = 'cotton-items-status cotton-items-status--success cotton-items-status--visible';
+        this.#statusTimeout = setTimeout(() => {
+            status.classList.remove('cotton-items-status--visible');
+        }, 3000);
     }
 
     /**
-     * Mostra mensagem de erro
+     * Shows error message
      * @private
      */
     #showError(message) {
         console.error('❌', message);
-        if (this.#components.status) {
-            this.#components.status.innerHTML = `<i class="icon-cancel"></i> ${message}`;
-            this.#components.status.className = 'cotton-status text-danger';
-            setTimeout(() => {
-                this.#components.status.innerHTML = Joomla.Text._('COM_COTTON_READY');
-                this.#components.status.className = 'cotton-status text-muted';
-            }, 5000);
+        const status = this.#components.status;
+        if (!status) return;
+        if (this.#statusTimeout) {
+            clearTimeout(this.#statusTimeout);
         }
+        status.textContent = message;
+        status.className = 'cotton-items-status cotton-items-status--error cotton-items-status--visible';
+        this.#statusTimeout = setTimeout(() => {
+            status.classList.remove('cotton-items-status--visible');
+        }, 5000);
     }
 
     /**
-     * Emite evento customizado
+     * Emits custom event
      * @private
      */
     #emit(event, data) {
@@ -1691,14 +1740,14 @@ async #selectItem(item, rowElement = null) {
                 try {
                     callback(data);
                 } catch (err) {
-                    console.error(`[CottonUIManager] Erro em listener de ${event}:`, err);
+                    console.error(`[CottonUIManager] Error in listener for ${event}:`, err);
                 }
             });
         }
     }
 
     /**
-     * Adiciona listener
+     * Adds listener
      * @param {string} event
      * @param {Function} callback
      */
@@ -1710,7 +1759,7 @@ async #selectItem(item, rowElement = null) {
     }
 
     /**
-     * Remove listener
+     * Removes listener
      * @param {string} event
      * @param {Function} callback
      */
@@ -1740,8 +1789,8 @@ async #selectItem(item, rowElement = null) {
     }
 
     /**
-      * Abre um modal
-     * @param {Object} options - Opções do CottonModal
+      * Opens a modal
+     * @param {Object} options - CottonModal options
      * @returns {CottonModal}
      */
     openModal(options) {
@@ -1751,9 +1800,9 @@ async #selectItem(item, rowElement = null) {
     }
 
     /**
-     * Cria um modal registrado (pode ser aberto pelo nome)
-     * @param {string} name - Nome identificador
-     * @param {Object} options - Opções do CottonModal
+     * Creates a registered modal (can be opened by name)
+     * @param {string} name - Identifier name
+     * @param {Object} options - CottonModal options
      * @returns {CottonModal}
      */
     createModal(name, options) {
@@ -1761,7 +1810,7 @@ async #selectItem(item, rowElement = null) {
     }
 
     /**
-     * Abre um modal registrado pelo nome
+     * Opens a registered modal by name
      * @param {string} name
      */
     showModal(name) {
@@ -1769,7 +1818,7 @@ async #selectItem(item, rowElement = null) {
     }
 
     /**
-     * Fecha um modal registrado pelo nome
+     * Closes a registered modal by name
      * @param {string} name
      */
     hideModal(name) {
@@ -1777,7 +1826,7 @@ async #selectItem(item, rowElement = null) {
     }
 
     /**
-     * Obtém o gerenciador de modais
+     * Gets the modal manager
      * @returns {CottonModalManager}
      */
     getModalManager() {
@@ -1785,11 +1834,11 @@ async #selectItem(item, rowElement = null) {
     }
 
     /**
-     * Mostra modal para criar nova pasta
+     * Shows modal to create new folder
      */
     showCreateFolderModal() {
         const parentId = this.#state.activeFolderId || 0;
-        // Garantir que a pasta pai está expandida
+        // Ensure parent folder is expanded
         this.#state.expandedFolders.add(parentId);
         
         const modal = this.openModal({
@@ -1841,8 +1890,8 @@ async #selectItem(item, rowElement = null) {
     }
 
     /**
-     * Mostra modal para editar pasta
-     * @param {Object} folder - Dados da pasta { id, name, description, open_link, allowed_users }
+     * Shows modal to edit folder
+     * @param {Object} folder - Folder data { id, name, description, open_link, allowed_users }
      */
     showEditFolderModal(folder) {
         const currentOpenLink = folder.open_link || 0;
@@ -1946,8 +1995,8 @@ async #selectItem(item, rowElement = null) {
     }
 
     /**
-     * Mostra modal para excluir pasta
-     * @param {Object} folder - Dados da pasta { id, name }
+     * Shows modal to delete folder
+     * @param {Object} folder - Folder data { id, name }
      */
     showDeleteFolderModal(folder) {
         const modal = this.openModal({
@@ -1974,6 +2023,7 @@ async #selectItem(item, rowElement = null) {
                 onSuccess: async (response) => {
                     this.#showSuccess(Joomla.Text._('COM_COTTON_FOLDER_DELETED'));
                     await this.#loadItems(this.#state.activeFolderId);
+                    this.#updateSpaceInfo();
                 }
             }
         });
@@ -1981,8 +2031,8 @@ async #selectItem(item, rowElement = null) {
     }
 
     /**
-     * Mostra modal para editar arquivo
-     * @param {Object} file - Dados do arquivo { id, name, description, open_link, allowed_users }
+     * Shows modal to edit file
+     * @param {Object} file - File data { id, name, description, open_link, allowed_users }
      */
     showEditFileModal(file) {
         const currentOpenLink = file.open_link || 0;
@@ -2086,8 +2136,8 @@ async #selectItem(item, rowElement = null) {
     }
 
     /**
-     * Mostra modal para excluir arquivo
-     * @param {Object} file - Dados do arquivo { id, name }
+     * Shows modal to delete file
+     * @param {Object} file - File data { id, name }
      */
     showDeleteFileModal(file) {
         const modal = this.openModal({
@@ -2114,6 +2164,7 @@ async #selectItem(item, rowElement = null) {
                 onSuccess: async (response) => {
                     this.#showSuccess(Joomla.Text._('COM_COTTON_FILE_DELETED'));
                     await this.#loadItems(this.#state.activeFolderId);
+                    this.#updateSpaceInfo();
                 }
             }
         });
@@ -2121,8 +2172,8 @@ async #selectItem(item, rowElement = null) {
     }
 
     /**
-     * Mostra modal para restaurar arquivo da lixeira
-     * @param {Object} file - Dados do arquivo { id, name, folder_id }
+     * Shows modal to restore file from trash
+     * @param {Object} file - File data { id, name, folder_id }
      */
     showRestoreFileModal(file) {
         let selectedFolderId = file.folder_id || 0;
@@ -2152,6 +2203,7 @@ async #selectItem(item, rowElement = null) {
                 onSuccess: async (response) => {
                     this.#showSuccess(Joomla.Text._('COM_COTTON_FILE_RESTORED'));
                     await this.#loadTrash();
+                    this.#updateSpaceInfo();
                 }
             }
         });
@@ -2182,8 +2234,8 @@ async #selectItem(item, rowElement = null) {
     }
 
     /**
-     * Mostra modal para excluir arquivo permanentemente
-     * @param {Object} file - Dados do arquivo { id, name }
+     * Shows modal to permanently delete file
+     * @param {Object} file - File data { id, name }
      */
     showDeletePermanentFileModal(file) {
         const modal = this.openModal({
@@ -2206,6 +2258,7 @@ async #selectItem(item, rowElement = null) {
                 onSuccess: async (response) => {
                     this.#showSuccess(Joomla.Text._('COM_COTTON_FILE_DELETED_PERMANENT'));
                     await this.#loadTrash();
+                    this.#updateSpaceInfo();
                 }
             }
         });
@@ -2213,8 +2266,8 @@ async #selectItem(item, rowElement = null) {
     }
 
     /**
-     * Mostra modal para restaurar pasta da lixeira
-     * @param {Object} folder - Dados da pasta { id, name, parent_id }
+     * Shows modal to restore folder from trash
+     * @param {Object} folder - Folder data { id, name, parent_id }
      */
     showRestoreFolderModal(folder) {
         let selectedFolderId = folder.parent_id || 0;
@@ -2244,6 +2297,7 @@ async #selectItem(item, rowElement = null) {
                 onSuccess: async (response) => {
                     this.#showSuccess(Joomla.Text._('COM_COTTON_FOLDER_RESTORED'));
                     await this.#loadTrash();
+                    this.#updateSpaceInfo();
                 }
             }
         });
@@ -2274,8 +2328,8 @@ async #selectItem(item, rowElement = null) {
     }
 
     /**
-     * Mostra modal para excluir pasta permanentemente
-     * @param {Object} folder - Dados da pasta { id, name }
+     * Shows modal to permanently delete folder
+     * @param {Object} folder - Folder data { id, name }
      */
     showDeletePermanentFolderModal(folder) {
         const modal = this.openModal({
@@ -2296,6 +2350,7 @@ async #selectItem(item, rowElement = null) {
                 onSuccess: async (response) => {
                     this.#showSuccess(Joomla.Text._('COM_COTTON_FOLDER_DELETED_PERMANENT'));
                     await this.#loadTrash();
+                    this.#updateSpaceInfo();
                 }
             }
         });
@@ -2303,7 +2358,7 @@ async #selectItem(item, rowElement = null) {
     }
 
     /**
-     * Destrói manager
+     * Destroys manager
      */
     destroy() {
         this.#listeners = {};
