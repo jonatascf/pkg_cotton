@@ -18,7 +18,6 @@ use Joomla\CMS\Component\ComponentHelper;
 use Tabaoca\Component\Cotton\Site\Model\Folder\FolderManager;
 use Tabaoca\Component\Cotton\Site\Model\File\FileManager;
 use Tabaoca\Component\Cotton\Site\Model\Service\TrashManager;
-use Tabaoca\Component\Cotton\Site\Model\Service\SpaceCalculator;
 
 /**
  * Model of Cotton Cloud System component
@@ -50,9 +49,16 @@ class CottonModel extends BaseModel {
 	protected $trashManager = null;
 
 	/**
-	 * @var SpaceCalculator|null
-	 */
-	protected $spaceCalculator = null;
+	* Method to get Joomla database driver.
+	* 
+	* @return  object  DatabaseDriver.
+	* @since   2.0.0
+	*/
+	private function getDatabase () {
+
+		return Factory::getContainer()->get('DatabaseDriver');
+
+	}
 
 	/**
 	 * Lazy-create FolderManager
@@ -94,45 +100,6 @@ class CottonModel extends BaseModel {
 	}
 
 	/**
-	 * Lazy-create SpaceCalculator
-	 *
-	 * @return SpaceCalculator
-	 */
-	protected function getSpaceCalculator()
-	{
-		if ($this->spaceCalculator === null) {
-			$this->spaceCalculator = new SpaceCalculator();
-		}
-		return $this->spaceCalculator;
-	}
-	
-	/**
-	* Method to get inicial data information to init the Cotton Cloud System.
-	* 
-	* @return  object  Root folder content information and configuration data of system.
-	* @since   2.0.0
-	*/
-	public function init () {
-
-		$currentuser = Factory::getApplication()->getIdentity();
-		$user_id = $currentuser->get("id");
-
-		$config = ComponentHelper::getParams('com_cotton');
-
-		$data = $this->items_load(0);
-		$data->limits = $this->limit_file_space();
-		$data->config = new \stdClass();
-		$data->config->text_formats = $this->array_formats($config->get('cotton_text_formats', 'txt,md,ini,htm,html,xhtml,xml,js,mjs,php,css,sass,scss,less,csv,ics,json,jsonld,xul'));
-		$data->config->image_formats = $this->array_formats($config->get('cotton_image_formats', 'bmp,jpg,jpeg,jfif,pjpeg,pjp,png,apng,gif,svg,webp'));
-		$data->config->video_formats = $this->array_formats($config->get('cotton_video_formats', 'mp4,webm,ogg'));
-		$data->config->audio_formats = $this->array_formats($config->get('cotton_audio_formats', 'wav,mp3,ogg'));
-		$data->config->config_header = $config->get('cotton_header');
-
-		return $data;
-
-	}
-
-	/**
 	* Method to load folder tree starting from a specific folder.
 	*
 	* @param   int     $folder_id   Folder id to start the tree (0 for root).
@@ -144,11 +111,10 @@ class CottonModel extends BaseModel {
 	public function tree_load ($folder_id = 0, $with_files = false) {
 
 		$currentuser = Factory::getApplication()->getIdentity();
-		$user_id = (int) $currentuser->get("id");
 		$app = Factory::getApplication();
 		$app->getLanguage()->load('com_cotton', JPATH_SITE);
 
-		$allFolders = $this->getFolderManager()->getRepo()->getUserFolders($user_id);
+		$allFolders = $this->getFolderManager()->getRepo()->getUserFolders($currentuser->id);
 
 		$lookup = [];
 		foreach ($allFolders as $f) {
@@ -195,14 +161,14 @@ class CottonModel extends BaseModel {
 		if ($with_files) {
 			$fileRepo = new \Tabaoca\Component\Cotton\Site\Model\File\FileRepository();
 			if ($rootId === 0) {
-				$rootFiles = $fileRepo->getByFolderForUser(0, $user_id);
+				$rootFiles = $fileRepo->getByFolderForUser(0, $currentuser->id);
 				$tree[0]->files = $rootFiles;
 				usort($tree[0]->files, function($a, $b) {
 					return strcasecmp($a->name, $b->name);
 				});
 			}
 			foreach ($lookup as $folder) {
-				$files = $fileRepo->getByFolderForUser((int) $folder->id, $user_id);
+				$files = $fileRepo->getByFolderForUser((int) $folder->id, $currentuser->id);
 				$folder->files = $files;
 				usort($folder->files, function($a, $b) {
 					return strcasecmp($a->name, $b->name);
@@ -230,24 +196,23 @@ class CottonModel extends BaseModel {
 	public function items_load ($folder_id = 0) {
 
 		$currentuser = Factory::getApplication()->getIdentity();
-		$user_id = (int) $currentuser->get("id");
 
 		$folderRepo = new \Tabaoca\Component\Cotton\Site\Model\Folder\FolderRepository();
 		$fileRepo = new \Tabaoca\Component\Cotton\Site\Model\File\FileRepository();
 
 		$folder_id = (int) $folder_id;
-		$folders = $folderRepo->getChildrenWithStats($folder_id, $user_id);
+		$folders = $folderRepo->getChildrenWithStats($folder_id, $currentuser->id);
 
 		$data = new \stdClass();
 		$data->n_folders = count($folders);
 		$data->folders = array_values($folders);
 
-		$files = $fileRepo->getByFolderForUser($folder_id, $user_id);
+		$files = $fileRepo->getByFolderForUser($folder_id, $currentuser->id);
 
 		$data->n_files = count($files);
 		$data->files = array_values($files);
 		$data->folder_id = $folder_id;
-        $data->path_folder = $folderRepo->getFolderPath((int) $folder_id, $user_id);
+        $data->path_folder = $folderRepo->getFolderPath((int) $folder_id, $currentuser->id);
 		$data->limits = $this->limit_file_space();
 
 		$data->n = $data->n_folders + $data->n_files;
@@ -265,9 +230,8 @@ class CottonModel extends BaseModel {
  	public function trash_load () {
 	 	
  		$currentuser = Factory::getApplication()->getIdentity();
- 		$user_id = (int) $currentuser->get("id");
  		
- 		return $this->getTrashManager()->loadTrash((int) $user_id);
+ 		return $this->getTrashManager()->loadTrash((int) $currentuser->id);
  	}
 
  	/**
@@ -300,6 +264,26 @@ class CottonModel extends BaseModel {
 	*/
 	public function folder_create ($parent_id, $name, $description) {
 
+		$app = Factory::getApplication();
+		$app->getLanguage()->load('com_cotton', JPATH_SITE);
+		$currentuser = $app->getIdentity();
+
+    	$data = new \stdClass();
+
+		if ($parent_id === null || $parent_id === '') {
+			$parent_id = 0;
+		}
+
+		if ($parent_id < 0) {
+			// Check ownership
+			$folder = $this->folder_select($parent_id);
+			if (!$folder || (int) $folder->owner_id !== $currentuser->id) {
+				$data->success = false;
+				$data->error = Text::_('COM_COTTON_ERROR_NOACCESS');
+				return $data;
+			}
+		}
+    	
 		$validation = $this->validateItemName($name);
 		if (!$validation['valid']) {
 			throw new \Exception($validation['message']);
@@ -307,7 +291,6 @@ class CottonModel extends BaseModel {
 
 		$res = $this->getFolderManager()->create((int) $parent_id, (string) $name, (string) $description);
 
-		$data = new \stdClass();
 		foreach ((array) $res as $k => $v) {
 			$data->{$k} = $v;
 		}
@@ -330,6 +313,22 @@ class CottonModel extends BaseModel {
 	*/
 	public function folder_update ($folder_id, $folder_name, $folder_description, $open_link = 0, $allowed_users = '') {
 
+		$app = Factory::getApplication();
+		$app->getLanguage()->load('com_cotton', JPATH_SITE);
+		$currentuser = $app->getIdentity();
+
+    	$data = new \stdClass();
+
+		if ($folder_id < 0) {
+			// Check ownership
+			$folder = $this->folder_select($folder_id);
+			if (!$folder || (int) $folder->owner_id !== $currentuser->id) {
+				$data->success = false;
+				$data->error = Text::_('COM_COTTON_ERROR_NOACCESS');
+				return $data;
+			}
+		}
+    	
 		$validation = $this->validateItemName($folder_name);
 		if (!$validation['valid']) {
 			throw new \Exception($validation['message']);
@@ -370,26 +369,25 @@ class CottonModel extends BaseModel {
 	*/
 	public function folder_delete ($folder_id, $trash) {
 
+		$app = Factory::getApplication();
+		$app->getLanguage()->load('com_cotton', JPATH_SITE);
+		$currentuser = $app->getIdentity();
+
+    	$data = new \stdClass();
+
+		if ($folder_id < 0) {
+			// Check ownership
+			$folder = $this->folder_select($folder_id);
+			if (!$folder || (int) $folder->owner_id !== $currentuser->id) {
+				$data->success = false;
+				$data->error = Text::_('COM_COTTON_ERROR_NOACCESS');
+				return $data;
+			}
+		}
+    	
 		// Delegate recursive delete/trash handling to FolderManager
 		$trashMode = (int) $trash;
 		return $this->getFolderManager()->deleteRecursive((int) $folder_id, $trashMode);
-	}
-
-	/**
-	* Method to send items to trash or recover item from trash.
-	* 
-	* @param   array  $items  List of items to be sended to trash.
-	* @param   string  $type  If 'folder' or 'file' type of item.
-	* @param   bool  $recover  If send to trash o recover item.  
-	* 
-	* @return  void
-	* @since   2.0.0
-	*/
-	private function folder_items_trash ($items, $type, $recover) {
-
-		// Delegate to FolderManager for bulk trash operations
-		return $this->getFolderManager()->itemsTrash((array) $items, (string) $type, (bool) $recover);
-
 	}
 
 	/**
@@ -410,6 +408,8 @@ class CottonModel extends BaseModel {
 		$app = Factory::getApplication();
 		$app->getLanguage()->load('com_cotton', JPATH_SITE);
 
+		$data = new \stdClass();
+
 		if (!$item_id || !$item_type) {
 			$data = new \stdClass();
 			$data->success = false;
@@ -428,6 +428,18 @@ class CottonModel extends BaseModel {
 			
 			case 'file':
 				
+				$currentuser = $app->getIdentity();
+				
+				// Check ownership
+				$file = $this->file_select($item_id);
+				if (!$file || (int) $file->owner_id !== $currentuser->id) {
+					$data->success = false;
+					$data->error = Text::_('COM_COTTON_ERROR_NOACCESS');
+					$data->item_id = $item_id;
+					$data->item_type = $item_type;
+					return $data;
+				}
+
 				if ($trash) {
 				
 					$item = new \stdClass();
@@ -451,7 +463,6 @@ class CottonModel extends BaseModel {
 
 		}
 
-		$data = new \stdClass();
 		$data->success = true;
 		$data->error = '';
 		$data->item_id = $item_id;
@@ -470,14 +481,13 @@ class CottonModel extends BaseModel {
 	public function clear_trash () {
 		
 		$currentuser = Factory::getApplication()->getIdentity();
-		$user_id = (int) $currentuser->get("id");
 
 		$db = $this->getDatabase();
 
 		// Delete Folders in trash
 		$query_a = $db->getQuery(true);
 		$query_a->delete($db->quoteName('#__cotton_folder'));
-		$query_a->where($db->quoteName('owner_id') . ' = ' . $db->quote($user_id));
+		$query_a->where($db->quoteName('owner_id') . ' = ' . $db->quote($currentuser->id));
 		$query_a->where($db->quoteName('trash') . ' != 0');
 		
 		$db->setQuery($query_a);
@@ -486,7 +496,7 @@ class CottonModel extends BaseModel {
 		// Delete Files in trash
 		$query_b = $db->getQuery(true);
 		$query_b->delete($db->quoteName('#__cotton_file'));
-		$query_b->where($db->quoteName('owner_id') . ' = ' . $db->quote($user_id));
+		$query_b->where($db->quoteName('owner_id') . ' = ' . $db->quote($currentuser->id));
 		$query_b->where($db->quoteName('trash') . ' != 0');
 
 		$db->setQuery($query_b);
@@ -513,9 +523,35 @@ class CottonModel extends BaseModel {
 	*/
 	public function item_recover ($item_id, $item_type, $item_name, $folder_id) {
 
+		$app = Factory::getApplication();
+		$app->getLanguage()->load('com_cotton', JPATH_SITE);
+		$currentuser = $app->getIdentity();
+
+    	$data = new \stdClass();
+
 		switch ($item_type) {
 
 			case 'folder' :
+
+				if ($item_id < 0) {
+					// Check ownership
+					$folder = $this->folder_select($folder_id);
+					if (!$folder || (int) $folder->owner_id !== $currentuser->id) {
+						$data->success = false;
+						$data->error = Text::_('COM_COTTON_ERROR_NOACCESS');
+						return $data;
+					}
+				}
+
+				if ($folder_id < 0) {
+					// Check ownership
+					$folder = $this->folder_select($folder_id);
+					if (!$folder || (int) $folder->owner_id !== $currentuser->id) {
+						$data->success = false;
+						$data->error = Text::_('COM_COTTON_ERROR_NOACCESS');
+						return $data;
+					}
+				}
 
 				$item = new \stdClass();
 				$item->id = $item_id;
@@ -530,6 +566,24 @@ class CottonModel extends BaseModel {
 
 			case 'file':
 
+				// Check ownership
+				$item = $this->file_select($item_id);
+				if (!$item || (int) $item->owner_id !== $currentuser->id) {
+					$data->success = false;
+					$data->error = Text::_('COM_COTTON_ERROR_NOACCESS');
+					return $data;
+				}
+
+				if ($folder_id < 0) {
+					// Check ownership
+					$folder = $this->folder_select($folder_id);
+					if (!$folder || (int) $folder->owner_id !== $currentuser->id) {
+						$data->success = false;
+						$data->error = Text::_('COM_COTTON_ERROR_NOACCESS');
+						return $data;
+					}
+				}
+
 				$item = new \stdClass();
 				$item->id = $item_id;
 				$item->name = $this->check_item_name($folder_id, $item_name, $item_type);
@@ -543,28 +597,10 @@ class CottonModel extends BaseModel {
 
 		}
 
-		$data = new \stdClass();
 		$data->success = true;
 		$data->error = '';
 
-
 		return $data;
-
-	}
-
-	/**
-	* Method to delete items from database.
-	* 
-	* @param   array  $items  List of items to be deleted.
-	* @param   string  $type  If 'folder' or 'file' type of items.
-	* 
-	* @return  void
-	* @since   2.0.0
-	*/
-	public function folder_items_delete ($items, $type) {
-
-		// Delegate to FolderManager for permanent deletions
-		return $this->getFolderManager()->itemsDelete((array) $items, (string) $type);
 
 	}
 
@@ -582,12 +618,27 @@ class CottonModel extends BaseModel {
 	*/
 	public function file_upload ($folder_id, $file_uploaded, $file_description, $index,  $chunk_index,  $total_chunks, $file_id, $upload_type) {
 
-		$currentuser = Factory::getApplication()->getIdentity();
-		$user_id = $currentuser->get("id");
-		$limits = $this->limit_file_space();
-		$data = new \stdClass();
 		$app = Factory::getApplication();
 		$app->getLanguage()->load('com_cotton', JPATH_SITE);
+		$currentuser = $app->getIdentity();
+
+		$data = new \stdClass();
+		
+		if ($folder_id === null || $folder_id === '') {
+			$folder_id = 0;
+		}
+
+		if ($folder_id < 0) {
+			// Check ownership
+			$folder = $this->folder_select($folder_id);
+			if (!$folder || (int) $folder->owner_id !== $currentuser->id) {
+				$data->success = false;
+				$data->error = Text::_('COM_COTTON_ERROR_NOACCESS');
+				return $data;
+			}
+		}
+
+		$limits = $this->limit_file_space();
 
 		$phpFileUploadErrors = array(	0 => Text::_('COM_COTTON_FILE_UPLOAD_ERROR_0'),
 										1 => Text::_('COM_COTTON_FILE_UPLOAD_ERROR_1'),
@@ -710,15 +761,24 @@ class CottonModel extends BaseModel {
     public function file_finalize($file_id) {
 		$app = Factory::getApplication();
 		$app->getLanguage()->load('com_cotton', JPATH_SITE);
+		$currentuser = Factory::getApplication()->getIdentity();
 
-    	$data = new \stdClass();
-    	
+		$data = new \stdClass();
+   	
     	if (!$file_id) {
     		$data->success = false;
     		$data->error = Text::_('COM_COTTON_ERROR_NOFILE');
     		return $data;
     	}
-    	
+
+		// Check ownership
+		$file = $this->file_select($file_id);
+		if (!$file || (int) $file->owner_id !== $currentuser->id) {
+			$data->success = false;
+			$data->error = Text::_('COM_COTTON_ERROR_NOACCESS');
+			return $data;
+		}
+
     	// Usar streaming do FileManager
     	$result = $this->getFileManager()->finalizeUpload((int) $file_id);
     	
@@ -732,6 +792,7 @@ class CottonModel extends BaseModel {
     public function file_cancel($file_id) {
 		$app = Factory::getApplication();
 		$app->getLanguage()->load('com_cotton', JPATH_SITE);
+		$currentuser = $app->getIdentity();
 
     	$data = new \stdClass();
     	
@@ -740,6 +801,14 @@ class CottonModel extends BaseModel {
     		$data->error = Text::_('COM_COTTON_ERROR_NOFILE');
     		return $data;
     	}
+
+		// Check ownership
+		$file = $this->file_select($file_id);
+		if (!$file || (int) $file->owner_id !== $currentuser->id) {
+			$data->success = false;
+			$data->error = Text::_('COM_COTTON_ERROR_NOACCESS');
+			return $data;
+		}
     	
     	$result = $this->getFileManager()->cancelUpload((int) $file_id);
     	
@@ -888,27 +957,23 @@ class CottonModel extends BaseModel {
 
 		$app = Factory::getApplication();
 		$app->getLanguage()->load('com_cotton', JPATH_SITE);
-		
-		$currentuser = Factory::getApplication()->getIdentity();
-		$user_id = $currentuser->get("id");
-
-		$app = Factory::getApplication();
+		$currentuser = $app->getIdentity();
 
 		$result = [];
 
-		$data = $this->file_select_open($file_id);
+		$file = $this->file_select_open($file_id);
 		
-		if ($data->n) {
+		if ($file) {
 
-			$allowed = json_decode($data->file[0]->allowed_users) ?: [];
+			$allowed = json_decode($file->allowed_users) ?: [];
 
-			if (($data->file[0]->owner_id == $user_id) || (in_array($user_id, $allowed))) {
+			if (($file->owner_id == $currentuser->id) || (in_array($currentuser->id, $allowed))) {
 
-				$this->file_open_print($data->file[0], $open_type);
+				$this->file_open_print($file, $open_type);
 
 			} else {
 
-				switch (intval($data->file[0]->open_link)) {
+				switch (intval($file->open_link)) {
 
 					case 0:
 						
@@ -919,7 +984,7 @@ class CottonModel extends BaseModel {
 
 						if ($user_id) {
 
-							$this->file_open_print($data->file[0], $open_type);
+							$this->file_open_print($file, $open_type);
 
 						} else {
 
@@ -932,7 +997,7 @@ class CottonModel extends BaseModel {
 
 					case 2:
 
-						$this->file_open_print($data->file[0], $open_type);
+						$this->file_open_print($file, $open_type);
 						break;
 
 				}
@@ -1015,6 +1080,33 @@ class CottonModel extends BaseModel {
 	}
 
 	/**
+	* Method to select a item folder information.
+	*
+	* @param   int  $folder_id  Id of a folder to be selected.
+	* 
+	* @return  object  Information of a folder.
+	* @since   2.0.3
+	*/
+	private function folder_select ($folder_id) {
+
+		$db = $this->getDatabase();
+		$query = $db->getQuery(true);
+
+		$query->select('a.id as id, a.owner_id as owner_id, a.name as name, a.date_created as date_created, a.date_updated as date_updated, 
+						a.parent_id as parent_id, a.allowed_users as allowed_users, a.open_link as open_link, a.trash as trash, a.params as params');
+		$query->from($db->quoteName('#__cotton_folder', 'a'));
+		$query->where($db->quoteName('a.id') . ' = ' . $db->quote((int) $folder_id));
+
+		$db->setQuery($query);
+		$db->execute();
+
+		$folder = $db->loadObject();
+
+		return $folder;
+
+	}
+
+	/**
 	* Method to select a item file information.
 	*
 	* @param   int  $file_id  Id of a file to be selected.
@@ -1024,9 +1116,6 @@ class CottonModel extends BaseModel {
 	*/
 	private function file_select ($file_id) {
 
-		$currentuser = Factory::getApplication()->getIdentity();
-		$user_id = $currentuser->get("id");
-
 		$db = $this->getDatabase();
 		$query = $db->getQuery(true);
 
@@ -1034,17 +1123,13 @@ class CottonModel extends BaseModel {
 						a.folder_id as folder_id, a.allowed_users as allowed_users, a.open_link as open_link, a.trash as trash, a.params as params');
 		$query->from($db->quoteName('#__cotton_file', 'a'));
 		$query->where($db->quoteName('a.id') . ' = ' . $db->quote((int) $file_id));
-		$query->where($db->quoteName('a.owner_id') . ' = ' . $db->quote((int) $user_id));
-		$query->where($db->quoteName('a.trash') . ' = 0');
 
 		$db->setQuery($query);
 		$db->execute();
 
-		$data = new \stdClass();
-		$data->n = $db->getNumRows();
-		$data->file = $db->loadObjectList();
+		$file = $db->loadObject();
 
-		return $data;
+		return $file;
 
 	}
 
@@ -1070,11 +1155,9 @@ class CottonModel extends BaseModel {
 		$db->setQuery($query);
 		$db->execute();
 
-		$data = new \stdClass();
-		$data->n = $db->getNumRows();
-		$data->file = $db->loadObjectList();
+		$file = $db->loadObject();
 
-		return $data;
+		return $file;
 
 	}
 
@@ -1091,9 +1174,19 @@ class CottonModel extends BaseModel {
 	public function file_save ($file_id, $file_saved) {
 		$app = Factory::getApplication();
 		$app->getLanguage()->load('com_cotton', JPATH_SITE);
+		$currentuser = Factory::getApplication()->getIdentity();
+
+    	$data = new \stdClass();
+    	
+		// Check ownership
+		$file = $this->file_select($file_id);
+		if (!$file || (int) $file->owner_id !== $currentuser->id) {
+			$data->success = false;
+			$data->error = Text::_('COM_COTTON_ERROR_NOACCESS');
+			return $data;
+		}
 
 		$limits = $this->limit_file_space();
-		$data = new \stdClass();
 
 		if (!intval($file_saved['error'])) {
 
@@ -1152,6 +1245,20 @@ class CottonModel extends BaseModel {
 	*/
 	public function file_update ($file_id, $file_name, $file_description, $file_open_link, $file_allowed_users) {
 
+		$app = Factory::getApplication();
+		$app->getLanguage()->load('com_cotton', JPATH_SITE);
+		$currentuser = Factory::getApplication()->getIdentity();
+
+    	$data = new \stdClass();
+    	
+		// Check ownership
+		$file = $this->file_select($file_id);
+		if (!$file || (int) $file->owner_id !== $currentuser->id) {
+			$data->success = false;
+			$data->error = Text::_('COM_COTTON_ERROR_NOACCESS');
+			return $data;
+		}
+
 		$validation = $this->validateItemName($file_name);
 		if (!$validation['valid']) {
 			throw new \Exception($validation['message']);
@@ -1207,70 +1314,21 @@ class CottonModel extends BaseModel {
 			$file->date_updated = $meta['date_updated'];
 			$file->open_link = $file_open_link;
 			$file->allowed_users = $allowed;
-			return $file;
+
+			$data->success = true;
+			$data->error = '';
+			$data->file = $file;
+
+			return $data;
 		}
 
-		return (object) ['success' => false, 'message' => $res['message'] ?? 'error'];
+		$data->success = false;
+		$data->error = $res['message'];
+		$data->file_id = $file_id;
+
+		return $data;
 
 	}
-
-	/**
-	* Method to delete a file item.
-	* 
-	* @param   int  $file_id  Id of file to be deleted.
-	* @param   int  $folder_id  Id of folder to be reloaded after to delete.
-	* @param   bool  $trash  If item file is going to the trash or to be deleted from database.
-	* 
-	* @return  object  Data folder reloaded after item file to be deleted.
-	* @since   2.0.0
-	*/
-	public function file_delete ($file_id, $folder_id, $trash) {
-
-		$currentuser = Factory::getApplication()->getIdentity();
-		$user_id = (int) $currentuser->get("id");
-
-		$del = $this->file_select($file_id);
-
-		if (!$del->n || (int) $del->file[0]->owner_id !== $user_id) {
-			$data->success = false;
-			$data->error = Text::_('COM_COTTON_ERROR_NOACCESS');
-			return $data;
-		}
-		
-		if ($del->n) {
-		
-			for ($p = 0; $p < $del->n; $p++) {
-				
-				if ((int) $del->file[$p]->owner_id !== $user_id) {
-			
-					if ($trash) {
-						
-						$this->folder_items_trash([$del->file[$p]], 'file', false);
-
-					} else {
-
-						$this->folder_items_delete([$del->file[$p]], 'file');
-
-					}
-				}
-
-			}
-
-			$data = $this->items_load($folder_id);
-			$data->error = false;
-
-			return $data;
-
-		} else {
-
-			$data = new \stdClass();
-			$data->error = true;
-
-			return $data;
-
-		}
-
-}
 
  	/**
  	* Method to space limits configuration of Cotton Cloud component.
@@ -1282,7 +1340,6 @@ class CottonModel extends BaseModel {
 
 		$config = ComponentHelper::getParams('com_cotton');
 		$currentuser = Factory::getApplication()->getIdentity();
-		$user_id = $currentuser->get("id");
 		
 		$data = new \stdClass();
 		
@@ -1311,7 +1368,7 @@ class CottonModel extends BaseModel {
 
 		$query->select('SUM(a.size) as used_space');
 		$query->from($db->quoteName('#__cotton_file', 'a'));
-		$query->where($db->quoteName('a.owner_id') . ' = ' . $db->quote($user_id));
+		$query->where($db->quoteName('a.owner_id') . ' = ' . $db->quote($currentuser->id));
 
 		$db->setQuery($query);
 		$db->execute();
@@ -1334,7 +1391,7 @@ class CottonModel extends BaseModel {
 
 		$query_b->select('SUM(a.size) as trash_used_space');
 		$query_b->from($db->quoteName('#__cotton_file', 'a'));
-		$query_b->where($db->quoteName('a.owner_id') . ' = ' . $db->quote($user_id));
+		$query_b->where($db->quoteName('a.owner_id') . ' = ' . $db->quote($currentuser->id));
 		$query_b->where($db->quoteName('a.trash') . ' = 1');
 
 		$db->setQuery($query_b);
@@ -1401,8 +1458,17 @@ class CottonModel extends BaseModel {
         $app = Factory::getApplication();
         $app->getLanguage()->load('com_cotton', JPATH_SITE);
 
-        $currentuser = Factory::getApplication()->getIdentity();
-        $user_id = $currentuser->get("id");
+        $currentuser = $app->getIdentity();
+
+    	$data = new \stdClass();
+    	
+		// Check ownership
+		$file = $this->file_select_open($file_id);
+		if (!$file || (int) $file->owner_id !== $currentuser->id) {
+			$data->success = false;
+			$data->error = Text::_('COM_COTTON_ERROR_NOACCESS');
+			return $data;
+		}
 
         $db = $this->getDatabase();
         $query = $db->getQuery(true);
@@ -1414,14 +1480,12 @@ class CottonModel extends BaseModel {
         $db->setQuery($query);
         $db->execute();
 
-        $n = $db->getNumRows();
-        $state = $db->loadObjectList();
+        $state = $db->loadObject();
 
-        $data = new \stdClass();
         $data->file_id = $file_id;
         $data->file_ext = $file_ext;
         
-        if ($state[0]->state < 1) {
+        if ($state->state < 1) {
 
             $data->success = false;
             $data->error = Text::_('COM_COTTON_ERROR_EDITOR_DISABLED');
@@ -1429,17 +1493,6 @@ class CottonModel extends BaseModel {
 
         }
 
-        $fileData = $this->file_select_open($file_id);
-        
-        if (!$fileData->n) {
-
-            $data->success = false;
-            $data->error = Text::_('COM_COTTON_ERROR_NOFILE');
-            return $data;
-
-        }
-
-        $file = $fileData->file[0];
         $allowed = json_decode($file->allowed_users) ?: [];
 
         $folderPath = '';
@@ -1448,7 +1501,7 @@ class CottonModel extends BaseModel {
             $folderPath = $folderRepo->getFolderPath((int) $file->folder_id, (int) $file->owner_id);
         }
 
-        $accessGranted = ($file->owner_id == $user_id) || (in_array($user_id, $allowed));
+        $accessGranted = ($file->owner_id == $currentuser->id) || (in_array($currentuser->id, $allowed));
         if (!$accessGranted) {
             switch (intval($file->open_link)) {
                 case 0:
@@ -1456,7 +1509,7 @@ class CottonModel extends BaseModel {
                     $data->error = Text::_('COM_COTTON_ERROR_NOACCESS');
                     return $data;
                 case 1:
-                    if (!$user_id) {
+                    if (!$currentuser->id) {
                         $data->success = false;
                         $data->error = Text::_('COM_COTTON_ERROR_NOACCESS');
                         return $data;
@@ -1477,11 +1530,7 @@ class CottonModel extends BaseModel {
             return $data;
         }
 
-        return $this->buildOpenEditorSuccess($data, $file, $file_ext, $folderPath);
-    }
-
-    private function buildOpenEditorSuccess($data, $file, $file_ext, $folderPath) {
-        $data->content = $file->file_data;
+		$data->content = $file->file_data;
         $data->file_data = $file->file_data;
         $data->name = $file->name;
         $data->folder_id = $file->folder_id ?? 0;
@@ -1493,6 +1542,7 @@ class CottonModel extends BaseModel {
         $data->file_ext = $file_ext ?: pathinfo($file->name, PATHINFO_EXTENSION);
         $data->success = true;
         $data->error = '';
+
         return $data;
     }
 
@@ -1510,24 +1560,23 @@ class CottonModel extends BaseModel {
 		$app->getLanguage()->load('com_cotton', JPATH_SITE);
 
 		$currentuser = Factory::getApplication()->getIdentity();
-		$user_id = (int) $currentuser->get("id");
 		$folder_id = (int) $folder_id;
 		$new_parent_id = (int) $new_parent_id;
 
 		$data = new \stdClass();
 
+		// Check ownership
+		$folder = $this->getFolderManager()->load($folder_id);
+		if (!$folder || (int) $folder->owner_id !== $currentuser->id) {
+			$data->success = false;
+			$data->error = Text::_('COM_COTTON_ERROR_NOACCESS');
+			return $data;
+		}
+
 		// Prevent moving a folder into itself or its own children
 		if ($folder_id === $new_parent_id) {
 			$data->success = false;
 			$data->error = Text::_('COM_COTTON_ERROR_MOVE_SELF');
-			return $data;
-		}
-
-		// Check ownership
-		$folder = $this->getFolderManager()->load($folder_id);
-		if (!$folder || (int) $folder->owner_id !== $user_id) {
-			$data->success = false;
-			$data->error = Text::_('COM_COTTON_ERROR_NOACCESS');
 			return $data;
 		}
 
@@ -1579,7 +1628,6 @@ class CottonModel extends BaseModel {
 		$app->getLanguage()->load('com_cotton', JPATH_SITE);
 
 		$currentuser = Factory::getApplication()->getIdentity();
-		$user_id = (int) $currentuser->get("id");
 		$file_id = (int) $file_id;
 		$folder_id = (int) $folder_id;
 
@@ -1587,7 +1635,7 @@ class CottonModel extends BaseModel {
 
 		// Check ownership
 		$file = $this->file_select($file_id);
-		if (!$file->n || (int) $file->file[0]->owner_id !== $user_id) {
+		if (!$file || (int) $file->owner_id !== $currentuser->id) {
 			$data->success = false;
 			$data->error = Text::_('COM_COTTON_ERROR_NOACCESS');
 			return $data;
@@ -1620,30 +1668,8 @@ class CottonModel extends BaseModel {
 	public function folder_load_path ($folder_id) {
 
 		$currentuser = Factory::getApplication()->getIdentity();
-		$user_id = (int) $currentuser->get("id");
 
-		return $this->getFolderManager()->getRepo()->getFolderPath((int) $folder_id, $user_id);
-
-	}
-
-	/**
-	* Method to load all folders for tree view.
-	*
-	* @return  object  List of all user folders.
-	* @since   2.0.0
-	*/
-	public function folder_load_list () {
-
-		$currentuser = Factory::getApplication()->getIdentity();
-		$user_id = (int) $currentuser->get("id");
-
-		$allFolders = $this->getFolderManager()->getRepo()->getUserFolders($user_id);
-
-		$data = new \stdClass();
-		$data->n = count($allFolders);
-		$data->list = $allFolders;
-
-		return $data;
+		return $this->getFolderManager()->getRepo()->getFolderPath((int) $folder_id, $currentuser->id);
 
 	}
 
@@ -1669,18 +1695,6 @@ class CottonModel extends BaseModel {
 	}
 	
 	/**
-	* Method to get Joomla database driver.
-	* 
-	* @return  object  DatabaseDriver.
-	* @since   2.0.0
-	*/
-	private function getDatabase () {
-
-		return Factory::getContainer()->get('DatabaseDriver');
-
-	}
-
-	/**
 	* Method to load all files information from a folder content.
 	*
 	* @param   int  $folder_id Folder id to load files.
@@ -1691,14 +1705,13 @@ class CottonModel extends BaseModel {
 	public function articles_list () {
 
 		$currentuser = Factory::getApplication()->getIdentity();
-		$user_id = $currentuser->get("id");
 
 		$db = $this->getDatabase();
 		$query = $db->getQuery(true);
 
 		$query->select('a.id as id, a.title as title, a.created_by as created_by, a.created_by_alias as created_by_alias, a.created as created, a.state as state, a.catid as catid, a.alias as alias, a.language as language');
 		$query->from($db->quoteName('#__content', 'a'));
-		$query->where($db->quoteName('a.created_by') . ' = ' . $db->quote((int) $user_id));
+		$query->where($db->quoteName('a.created_by') . ' = ' . $db->quote((int) $currentuser->id));
 		$query->order($db->quoteName('a.id'));
 
 		$db->setQuery($query);

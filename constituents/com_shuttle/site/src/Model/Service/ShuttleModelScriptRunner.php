@@ -11,6 +11,7 @@ namespace Tabaoca\Component\Shuttle\Site\Model\Service;
 \defined('_JEXEC') or die;
 
 use InvalidArgumentException;
+use Joomla\CMS\Factory;
 use Joomla\CMS\Language\Text;
 
 class ShuttleModelScriptRunner
@@ -147,6 +148,11 @@ class ShuttleModelScriptRunner
 		}
 
 		if ($file === null) {
+			return null;
+		}
+
+		$currentUserId = (int) Factory::getApplication()->getIdentity()->id;
+		if ((int) $file->owner_id !== $currentUserId) {
 			return null;
 		}
 

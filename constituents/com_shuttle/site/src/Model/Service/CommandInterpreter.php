@@ -1269,6 +1269,11 @@ public function execute(string $rawCommand, string $cwd, array $options = [], ar
 			return ['error' => Text::_('COM_SHUTTLE_FILE_NOT_FOUND') . ': "' . $target . '"'];
 		}
 
+		$denied = $this->cottonBridge->assertFileOwner((int) $file->id);
+		if ($denied !== null) {
+			return ['error' => Text::_('COM_SHUTTLE_ERROR_NOACCESS')];
+		}
+
 		$content = $file->file_data ?? '';
 		$formattedContent = $this->formatCatOutput($content, $options);
 
@@ -1276,10 +1281,10 @@ public function execute(string $rawCommand, string $cwd, array $options = [], ar
 			'command' => 'cat',
 			'file_id' => (int) $file->id,
 			'name' => $file->name ?? '',
-		'path' => $file->path ?? '',
-		'output' => $formattedContent,
-		'data' => $file,
-		];
+			'path' => $file->path ?? '',
+			'output' => $formattedContent,
+			'data' => $file,
+			];
 	}
 
 	public function handleHead(array $args, string $cwd): array
@@ -1370,6 +1375,11 @@ public function execute(string $rawCommand, string $cwd, array $options = [], ar
 		$file = $this->cottonBridge->readFileByPath($target);
 		if ($file === null) {
 			return ['error' => Text::_('COM_SHUTTLE_FILE_NOT_FOUND') . ': "' . $target . '"'];
+		}
+
+		$denied = $this->cottonBridge->assertFileOwner((int) $file->id);
+		if ($denied !== null) {
+			return ['error' => Text::_('COM_SHUTTLE_ERROR_NOACCESS')];
 		}
 
 		$content = $file->file_data ?? '';
@@ -1519,6 +1529,11 @@ public function execute(string $rawCommand, string $cwd, array $options = [], ar
 		$file = $this->cottonBridge->readFileByPath($target);
 		if ($file === null) {
 			return ['error' => Text::_('COM_SHUTTLE_FILE_NOT_FOUND') . ': "' . $target . '"'];
+		}
+
+		$denied = $this->cottonBridge->assertFileOwner((int) $file->id);
+		if ($denied !== null) {
+			return ['error' => Text::_('COM_SHUTTLE_ERROR_NOACCESS')];
 		}
 
 		$content = $file->file_data ?? '';
@@ -1685,6 +1700,11 @@ public function execute(string $rawCommand, string $cwd, array $options = [], ar
 		$file = $this->cottonBridge->readFileByPath($target);
 		if ($file === null) {
 			return ['error' => Text::_('COM_SHUTTLE_FILE_NOT_FOUND') . ': "' . $target . '"'];
+		}
+
+		$denied = $this->cottonBridge->assertFileOwner((int) $file->id);
+		if ($denied !== null) {
+			return ['error' => Text::_('COM_SHUTTLE_ERROR_NOACCESS')];
 		}
 
 		$content = $file->file_data ?? '';
@@ -2061,6 +2081,14 @@ public function execute(string $rawCommand, string $cwd, array $options = [], ar
 			return ['error' => Text::_('COM_SHUTTLE_DIRECTORY_NOT_FOUND') . ': ' . ($pathTarget ?? ($options['id'] ?? ''))];
 		}
 
+		$folderId = (int) $resolved['id'];
+		if ($folderId !== 0) {
+			$folder = $this->cottonBridge->getFolderById($folderId);
+			if (!$folder || (int) $folder['owner_id'] !== (int) Factory::getApplication()->getIdentity()->id) {
+				return ['error' => Text::_('COM_SHUTTLE_ERROR_NOACCESS')];
+			}
+		}
+
 		if ($options['json']) {
 			return [
 				'command' => 'cd',
@@ -2180,6 +2208,14 @@ public function execute(string $rawCommand, string $cwd, array $options = [], ar
 			$resolved = $this->cottonBridge->resolvePath($normalized['path']);
 			if (isset($resolved['error']) || ($resolved['type'] ?? '') !== 'folder') {
 				return ['error' => Text::_('COM_SHUTTLE_DIRECTORY_NOT_FOUND') . ': ' . $target];
+			}
+		}
+
+		$folderId = (int) $resolved['id'];
+		if ($folderId !== 0) {
+			$folder = $this->cottonBridge->getFolderById($folderId);
+			if (!$folder || (int) $folder['owner_id'] !== (int) Factory::getApplication()->getIdentity()->id) {
+				return ['error' => Text::_('COM_SHUTTLE_ERROR_NOACCESS')];
 			}
 		}
 

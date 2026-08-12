@@ -511,10 +511,7 @@ function buildHeader() {
 		
 		state.tabsModule = new window.CottonTabs(tabsContainer, editorContainer, {
 			onTabClose: async (tab) => {
-				const shouldClose = !tab.dirty || await promptSaveBeforeClose(tab);
-				if (shouldClose) {
-					return true;
-				}
+				return !tab.dirty || await promptSaveBeforeClose(tab);
 			},
 			onTabChange: (tab) => {
 				focusEditor();
@@ -1362,11 +1359,15 @@ function buildHeader() {
 				width: '300px',
 				height: '180px',
 				body: `
-					<p>${Joomla.Text._('COM_WEAVER_PROMPT_SAVE_CHANGES_PREFIX')}<strong>${escapeHtml(tab.name)}</strong>?</p>
-					<div class="cotton-modal-footer">
-						<button type="button" id="weaver_close_dont_save" class="btn btn-outline-secondary btn-sm">${Joomla.Text._('COM_WEAVER_BUTTON_DONT_SAVE')}</button>
-						<button type="button" id="weaver_close_cancel" class="btn btn-outline-secondary btn-sm">${Joomla.Text._('COM_WEAVER_BUTTON_CANCEL')}</button>
-						<button type="button" id="weaver_close_save" class="btn btn-outline-secondary btn-sm active">${Joomla.Text._('COM_WEAVER_BUTTON_SAVE')}</button>
+					<div class="cotton-modal-savebeforeclose">
+						<div class="cotton-modal-body-text">
+						<span>${Joomla.Text._('COM_WEAVER_PROMPT_SAVE_CHANGES_PREFIX')}<strong>${escapeHtml(tab.name)}</strong>?</span>
+						</div>
+						<div class="cotton-modal-footer">
+							<button type="button" id="weaver_close_dont_save" class="btn btn-outline-secondary btn-sm active">${Joomla.Text._('COM_WEAVER_BUTTON_DONT_SAVE')}</button>
+							<button type="button" id="weaver_close_cancel" class="btn btn-outline-secondary btn-sm active">${Joomla.Text._('COM_WEAVER_BUTTON_CANCEL')}</button>
+							<button type="button" id="weaver_close_save" class="btn btn-outline-secondary btn-sm active">${Joomla.Text._('COM_WEAVER_BUTTON_SAVE')}</button>
+						</div>
 					</div>
 				`,
 				showFooter: false,

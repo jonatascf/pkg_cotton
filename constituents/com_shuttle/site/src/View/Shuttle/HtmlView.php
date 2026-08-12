@@ -174,7 +174,7 @@ class HtmlView extends BaseHtmlView {
 		Text::script('COM_SHUTTLE_STORAGE_USAGE');
 		Text::script('COM_SHUTTLE_STORAGE_QUOTA');
 		Text::script('COM_SHUTTLE_IP_ADDRESS');
-
+		Text::script('COM_SHUTTLE_ERROR_NOACCESS');
 
     }
 

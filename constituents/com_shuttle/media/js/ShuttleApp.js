@@ -304,7 +304,7 @@ class ShuttleApp {
             const result = await response.json();
 
             if (!result.success) {
-                this.#displayError(Joomla.Text._('COM_SHUTTLE_REMOTE_ERROR'));
+                this.#displayError(Joomla.Text._('COM_SHUTTLE_REMOTE_ERROR') + ' ' + (result.message || Joomla.Text._('COM_SHUTTLE_UNKNOWN_ERROR')));
                 return null;
             }
 

@@ -51,14 +51,6 @@ class FolderManager
         $user = $app->getIdentity();
         $now = (string) Factory::getDate()->toSql();
 
-        /*$data = [
-            'parent_id'  => (int) $parentId,
-            'name'       => strip_tags($name),
-            'description'=> strip_tags($description),
-            'date_created'    => $now,
-            'owner_id' => (int) ($user->id ?? 0)
-        ];*/
-
         $data = new \stdClass();
         $data->parent_id = (int) $parentId;
         $data->name = strip_tags($uniqueName);

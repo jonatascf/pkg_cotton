@@ -157,15 +157,6 @@ class CottonController extends BaseController {
 	}
 
 	/**
-	 * Shortcut: Initialize the component
-	 * @return void
-	 * @since 2.0.0
-	 */
-	public function init() {
-		$this->callSiteMethod('init');
-	}
-
-	/**
 	 * Shortcut: Get folder content
 	 * @return void
 	 * @since 2.0.0

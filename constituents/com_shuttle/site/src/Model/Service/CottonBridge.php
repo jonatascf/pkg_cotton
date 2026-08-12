@@ -147,6 +147,7 @@ class CottonBridge
 			'name'      => $folder->name,
 			'path'      => $folder->parent_id ? $this->getFolderPath((int) $folder->id) : '/' . $folder->name,
 			'parent_id' => $folder->parent_id !== null ? (int) $folder->parent_id : null,
+			'owner_id'  => $folder->owner_id !== null ? (int) $folder->owner_id : 0,
 		];
 	}
 
@@ -157,10 +158,13 @@ class CottonBridge
 			return [];
 		}
 
+		$userId = $this->getCurrentUserId();
+
 		$query = $this->db->getQuery(true)
 			->select(['a.id', 'a.name', 'a.folder_id'])
 			->from($this->db->quoteName('#__cotton_file', 'a'))
 			->where($this->db->quoteName('a.trash') . ' = 0')
+			->where($this->db->quoteName('a.owner_id') . ' = ' . $this->db->quote($userId))
 			->where($this->db->quoteName('a.name') . ' LIKE ' . $this->db->quote('%' . $this->db->escape($term, true) . '%'))
 			->order($this->db->quoteName('a.name') . ' ASC');
 
@@ -184,10 +188,13 @@ class CottonBridge
 			return [];
 		}
 
+		$userId = $this->getCurrentUserId();
+
 		$query = $this->db->getQuery(true)
 			->select(['a.id', 'a.name'])
 			->from($this->db->quoteName('#__cotton_folder', 'a'))
 			->where($this->db->quoteName('a.trash') . ' = 0')
+			->where($this->db->quoteName('a.owner_id') . ' = ' . $this->db->quote($userId))
 			->where($this->db->quoteName('a.name') . ' LIKE ' . $this->db->quote('%' . $this->db->escape($term, true) . '%'))
 			->order($this->db->quoteName('a.name') . ' ASC');
 
@@ -221,30 +228,60 @@ class CottonBridge
 
 	public function createFolder(int $parentId, string $name, string $description = ''): array
 	{
+		$denied = $this->assertFolderOwner($parentId);
+		if ($denied !== null) {
+			return $denied;
+		}
+
 		$model = new \Tabaoca\Component\Cotton\Site\Model\CottonModel();
 		return (array) $model->folder_create($parentId, $name, $description);
 	}
 
 	public function deleteFolder(int $folderId, bool $permanent = false): array
 	{
+		$denied = $this->assertFolderOwner($folderId);
+		if ($denied !== null) {
+			return $denied;
+		}
+
 		$model = new \Tabaoca\Component\Cotton\Site\Model\CottonModel();
 		return (array) $model->folder_delete($folderId, $permanent ? 0 : 1);
 	}
 
 	public function moveFolder(int $folderId, int $newParentId): array
 	{
+		$denied = $this->assertFolderOwner($folderId);
+		if ($denied !== null) {
+			return $denied;
+		}
+
 		$model = new \Tabaoca\Component\Cotton\Site\Model\CottonModel();
 		return (array) $model->folder_move($folderId, $newParentId);
 	}
 
 	public function moveFile(int $fileId, int $newFolderId): array
 	{
+		$denied = $this->assertFileOwner($fileId);
+		if ($denied !== null) {
+			return $denied;
+		}
+
 		$model = new \Tabaoca\Component\Cotton\Site\Model\CottonModel();
 		return (array) $model->file_move($fileId, $newFolderId);
 	}
 
 	public function copyFile(int $fileId, int $newFolderId, string $newName = ''): array
 	{
+		$denied = $this->assertFileOwner($fileId);
+		if ($denied !== null) {
+			return $denied;
+		}
+
+		$denied = $this->assertFolderOwner($newFolderId);
+		if ($denied !== null) {
+			return $denied;
+		}
+
 		$sourceFile = $this->readFileByPath((string) $fileId);
 		if ($sourceFile === null || empty($sourceFile->file_data)) {
 			return ['error' => 'Source file not found'];
@@ -258,6 +295,16 @@ class CottonBridge
 
 	public function copyFolderRecursive(int $folderId, int $newParentId, string $newName = ''): array
 	{
+		$denied = $this->assertFolderOwner($folderId);
+		if ($denied !== null) {
+			return $denied;
+		}
+
+		$denied = $this->assertFolderOwner($newParentId);
+		if ($denied !== null) {
+			return $denied;
+		}
+
 		$sourceFolder = $this->getFolderById($folderId);
 		if ($sourceFolder === null) {
 			return ['error' => 'Source folder not found'];
@@ -329,6 +376,11 @@ class CottonBridge
 				return ['error' => Text::_('COM_SHUTTLE_PARENT_FOLDER_NOT_FOUND') . ': ' . $parentPath];
 			}
 
+			$denied = $this->assertFolderOwner((int) $parentResolved['id']);
+			if ($denied !== null) {
+				return $denied;
+			}
+
 			$result = $this->createFolder((int) $parentResolved['id'], $part, '');
 			if (empty($result['success'])) {
 				return ['error' => $result['message'] ?? 'Unable to create directory'];
@@ -373,6 +425,11 @@ class CottonBridge
 		foreach ($targets as $target) {
 			$file = $this->readFileByPath($target);
 			if ($file === null || empty($file->file_data)) {
+				continue;
+			}
+
+			$denied = $this->assertFileOwner((int) $file->id);
+			if ($denied !== null) {
 				continue;
 			}
 
@@ -438,18 +495,33 @@ class CottonBridge
 
 	public function saveFileContent(int $fileId, string $content): array
 	{
+		$denied = $this->assertFileOwner($fileId);
+		if ($denied !== null) {
+			return $denied;
+		}
+
 		$fileManager = new \Tabaoca\Component\Cotton\Site\Model\File\FileManager($this->createFileRepository());
 		return $fileManager->saveContent($fileId, $content);
 	}
 
 	public function createFile(int $folderId, string $name, string $content, string $description = ''): array
 	{
+		$denied = $this->assertFolderOwner($folderId);
+		if ($denied !== null) {
+			return $denied;
+		}
+
 		$fileManager = new \Tabaoca\Component\Cotton\Site\Model\File\FileManager($this->createFileRepository());
 		return $fileManager->create($folderId, $name, $content, $description);
 	}
 
 	public function deleteFile(int $fileId): array
 	{
+		$denied = $this->assertFileOwner($fileId);
+		if ($denied !== null) {
+			return $denied;
+		}
+
 		$fileManager = new \Tabaoca\Component\Cotton\Site\Model\File\FileManager($this->createFileRepository());
 		return $fileManager->delete($fileId);
 	}
@@ -518,5 +590,42 @@ class CottonBridge
 	protected function createFileRepository()
 	{
 		return new \Tabaoca\Component\Cotton\Site\Model\File\FileRepository($this->db);
+	}
+
+	protected function getCurrentUserId(): int
+	{
+		return (int) Factory::getApplication()->getIdentity()->id;
+	}
+
+	public function assertFolderOwner(int $folderId): ?array
+	{
+		if ($folderId === 0) {
+			return [];
+		}
+
+		$folder = $this->getFolderById($folderId);
+		if (!$folder || (int) $folder['owner_id'] !== $this->getCurrentUserId()) {
+			return [
+				'success' => false,
+				'message' => Text::_('COM_SHUTTLE_ERROR_NOACCESS'),
+				'error' => Text::_('COM_SHUTTLE_ERROR_NOACCESS'),
+			];
+		}
+
+		return null;
+	}
+
+	public function assertFileOwner(int $fileId): ?array
+	{
+		$file = $this->getById($fileId);
+		if (!$file || (int) $file->owner_id !== $this->getCurrentUserId()) {
+			return [
+				'success' => false,
+				'message' => Text::_('COM_SHUTTLE_ERROR_NOACCESS'),
+				'error' => Text::_('COM_SHUTTLE_ERROR_NOACCESS'),
+			];
+		}
+
+		return null;
 	}
 }
