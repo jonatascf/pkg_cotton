@@ -18,6 +18,7 @@ use Joomla\CMS\Component\ComponentHelper;
 use Tabaoca\Component\Cotton\Site\Model\Folder\FolderManager;
 use Tabaoca\Component\Cotton\Site\Model\File\FileManager;
 use Tabaoca\Component\Cotton\Site\Model\Service\TrashManager;
+use Tabaoca\Component\Cotton\Site\Model\Service\ItemSecurity;
 
 /**
  * Model of Cotton Cloud System component
@@ -47,6 +48,11 @@ class CottonModel extends BaseModel {
 	 * @var TrashManager|null
 	 */
 	protected $trashManager = null;
+
+	/**
+	 * @var ItemSecurity|null
+	 */
+	protected $itemSecurity = null;
 
 	/**
 	* Method to get Joomla database driver.
@@ -97,6 +103,19 @@ class CottonModel extends BaseModel {
 			$this->trashManager = new TrashManager();
 		}
 		return $this->trashManager;
+	}
+
+	/**
+	 * Lazy-create ItemSecurity
+	 *
+	 * @return ItemSecurity
+	 */
+	protected function getItemSecurity()
+	{
+		if ($this->itemSecurity === null) {
+			$this->itemSecurity = new ItemSecurity();
+		}
+		return $this->itemSecurity;
 	}
 
 	/**
@@ -274,14 +293,10 @@ class CottonModel extends BaseModel {
 			$parent_id = 0;
 		}
 
-		if ($parent_id < 0) {
-			// Check ownership
-			$folder = $this->folder_select($parent_id);
-			if (!$folder || (int) $folder->owner_id !== $currentuser->id) {
-				$data->success = false;
-				$data->error = Text::_('COM_COTTON_ERROR_NOACCESS');
-				return $data;
-			}
+		$folderSecurity = $this->getItemSecurity();
+		$access = $folderSecurity->assertCanCreateInFolder((int) $parent_id, (int) $currentuser->id);
+		if (isset($access->success) && !$access->success) {
+			return $access;
 		}
     	
 		$validation = $this->validateItemName($name);
@@ -319,14 +334,10 @@ class CottonModel extends BaseModel {
 
     	$data = new \stdClass();
 
-		if ($folder_id < 0) {
-			// Check ownership
-			$folder = $this->folder_select($folder_id);
-			if (!$folder || (int) $folder->owner_id !== $currentuser->id) {
-				$data->success = false;
-				$data->error = Text::_('COM_COTTON_ERROR_NOACCESS');
-				return $data;
-			}
+		$folder = $this->folder_select($folder_id);
+		$access = $this->getItemSecurity()->assertCanEdit($folder, (int) $currentuser->id);
+		if (isset($access->success) && !$access->success) {
+			return $access;
 		}
     	
 		$validation = $this->validateItemName($folder_name);
@@ -375,14 +386,10 @@ class CottonModel extends BaseModel {
 
     	$data = new \stdClass();
 
-		if ($folder_id < 0) {
-			// Check ownership
-			$folder = $this->folder_select($folder_id);
-			if (!$folder || (int) $folder->owner_id !== $currentuser->id) {
-				$data->success = false;
-				$data->error = Text::_('COM_COTTON_ERROR_NOACCESS');
-				return $data;
-			}
+		$folder = $this->folder_select($folder_id);
+		$access = $this->getItemSecurity()->assertCanDelete($folder, (int) $currentuser->id);
+		if (isset($access->success) && !$access->success) {
+			return $access;
 		}
     	
 		// Delegate recursive delete/trash handling to FolderManager
@@ -430,9 +437,9 @@ class CottonModel extends BaseModel {
 				
 				$currentuser = $app->getIdentity();
 				
-				// Check ownership
 				$file = $this->file_select($item_id);
-				if (!$file || (int) $file->owner_id !== $currentuser->id) {
+				$access = $this->getItemSecurity()->assertCanDelete($file, (int) $currentuser->id);
+				if (isset($access->success) && !$access->success) {
 					$data->success = false;
 					$data->error = Text::_('COM_COTTON_ERROR_NOACCESS');
 					$data->item_id = $item_id;
@@ -533,24 +540,15 @@ class CottonModel extends BaseModel {
 
 			case 'folder' :
 
-				if ($item_id < 0) {
-					// Check ownership
-					$folder = $this->folder_select($folder_id);
-					if (!$folder || (int) $folder->owner_id !== $currentuser->id) {
-						$data->success = false;
-						$data->error = Text::_('COM_COTTON_ERROR_NOACCESS');
-						return $data;
-					}
+				$folder = $this->folder_select($item_id);
+				$access = $this->getItemSecurity()->assertCanDelete($folder, (int) $currentuser->id);
+				if (isset($access->success) && !$access->success) {
+					return $access;
 				}
 
-				if ($folder_id < 0) {
-					// Check ownership
-					$folder = $this->folder_select($folder_id);
-					if (!$folder || (int) $folder->owner_id !== $currentuser->id) {
-						$data->success = false;
-						$data->error = Text::_('COM_COTTON_ERROR_NOACCESS');
-						return $data;
-					}
+				$access = $this->getItemSecurity()->assertCanCreateInFolder((int) $folder_id, (int) $currentuser->id);
+				if (isset($access->success) && !$access->success) {
+					return $access;
 				}
 
 				$item = new \stdClass();
@@ -566,22 +564,15 @@ class CottonModel extends BaseModel {
 
 			case 'file':
 
-				// Check ownership
 				$item = $this->file_select($item_id);
-				if (!$item || (int) $item->owner_id !== $currentuser->id) {
-					$data->success = false;
-					$data->error = Text::_('COM_COTTON_ERROR_NOACCESS');
-					return $data;
+				$access = $this->getItemSecurity()->assertCanDelete($item, (int) $currentuser->id);
+				if (isset($access->success) && !$access->success) {
+					return $access;
 				}
 
-				if ($folder_id < 0) {
-					// Check ownership
-					$folder = $this->folder_select($folder_id);
-					if (!$folder || (int) $folder->owner_id !== $currentuser->id) {
-						$data->success = false;
-						$data->error = Text::_('COM_COTTON_ERROR_NOACCESS');
-						return $data;
-					}
+				$access = $this->getItemSecurity()->assertCanCreateInFolder((int) $folder_id, (int) $currentuser->id);
+				if (isset($access->success) && !$access->success) {
+					return $access;
 				}
 
 				$item = new \stdClass();
@@ -628,14 +619,10 @@ class CottonModel extends BaseModel {
 			$folder_id = 0;
 		}
 
-		if ($folder_id < 0) {
-			// Check ownership
-			$folder = $this->folder_select($folder_id);
-			if (!$folder || (int) $folder->owner_id !== $currentuser->id) {
-				$data->success = false;
-				$data->error = Text::_('COM_COTTON_ERROR_NOACCESS');
-				return $data;
-			}
+		$folderSecurity = $this->getItemSecurity();
+		$access = $folderSecurity->assertCanCreateInFolder((int) $folder_id, (int) $currentuser->id);
+		if (isset($access->success) && !$access->success) {
+			return $access;
 		}
 
 		$limits = $this->limit_file_space();
@@ -754,6 +741,91 @@ class CottonModel extends BaseModel {
 	}
 
 	/**
+	 * Create a new text file with content.
+	 *
+	 * @param   int     $folder_id         Target folder ID.
+	 * @param   string  $file_name         File name.
+	 * @param   string  $file_description  File description.
+	 * @param   string  $content           Initial file content.
+	 *
+	 * @return  \stdClass  Status and file data.
+	 * @since   2.2.0
+	 */
+	public function file_create_text($folder_id, $file_name, $file_description, $content = '')
+	{
+		$app = Factory::getApplication();
+		$app->getLanguage()->load('com_cotton', JPATH_SITE);
+		$currentuser = $app->getIdentity();
+
+		$data = new \stdClass();
+
+		if ($folder_id === null || $folder_id === '') {
+			$folder_id = 0;
+		}
+
+		$folderSecurity = $this->getItemSecurity();
+		$access = $folderSecurity->assertCanCreateInFolder((int) $folder_id, (int) $currentuser->id);
+		if (isset($access->success) && !$access->success) {
+			return $access;
+		}
+
+		$validation = $this->validateItemName($file_name);
+		if (!$validation['valid']) {
+			throw new \Exception($validation['message']);
+		}
+
+		$res = $this->getFileManager()->create((int) $folder_id, (string) $file_name, (string) $content, (string) $file_description);
+
+		foreach ((array) $res as $k => $v) {
+			$data->{$k} = $v;
+		}
+		$data->folder_id = $folder_id;
+
+		return $data;
+
+	}
+
+	/**
+	 * Save content to a file directly (bypassing upload structure).
+	 *
+	 * @param   int     $file_id  File ID to save.
+	 * @param   string  $content  New file content.
+	 *
+	 * @return  \stdClass  Status and file data.
+	 * @since   2.2.0
+	 */
+	public function file_save_content($file_id, $content)
+	{
+		$app = Factory::getApplication();
+		$app->getLanguage()->load('com_cotton', JPATH_SITE);
+		$currentuser = Factory::getApplication()->getIdentity();
+
+		$data = new \stdClass();
+
+		$file = $this->file_select($file_id);
+		$access = $this->getItemSecurity()->assertCanEdit($file, (int) $currentuser->id);
+		if (isset($access->success) && !$access->success) {
+			return $access;
+		}
+
+		$res = $this->getFileManager()->saveContent((int) $file_id, (string) $content);
+
+		if (!empty($res['success'])) {
+			$data->success = true;
+			$data->error = '';
+			$data->file_id = $file_id;
+			$data->file_data = $content;
+		} else {
+			$data->success = false;
+			$data->error = $res['message'] ?? Text::_('COM_COTTON_ERROR_SAVE');
+			$data->file_id = $file_id;
+		}
+
+		return $data;
+
+	}
+
+	/**
 	 * Finaliza upload concatenando arquivo temporário ao arquivo final
 	 * @param int $file_id
 	 * @return object
@@ -771,12 +843,10 @@ class CottonModel extends BaseModel {
     		return $data;
     	}
 
-		// Check ownership
 		$file = $this->file_select($file_id);
-		if (!$file || (int) $file->owner_id !== $currentuser->id) {
-			$data->success = false;
-			$data->error = Text::_('COM_COTTON_ERROR_NOACCESS');
-			return $data;
+		$access = $this->getItemSecurity()->assertCanEdit($file, (int) $currentuser->id);
+		if (isset($access->success) && !$access->success) {
+			return $access;
 		}
 
     	// Usar streaming do FileManager
@@ -802,12 +872,10 @@ class CottonModel extends BaseModel {
     		return $data;
     	}
 
-		// Check ownership
 		$file = $this->file_select($file_id);
-		if (!$file || (int) $file->owner_id !== $currentuser->id) {
-			$data->success = false;
-			$data->error = Text::_('COM_COTTON_ERROR_NOACCESS');
-			return $data;
+		$access = $this->getItemSecurity()->assertCanEdit($file, (int) $currentuser->id);
+		if (isset($access->success) && !$access->success) {
+			return $access;
 		}
     	
     	$result = $this->getFileManager()->cancelUpload((int) $file_id);
@@ -965,43 +1033,11 @@ class CottonModel extends BaseModel {
 		
 		if ($file) {
 
-			$allowed = json_decode($file->allowed_users) ?: [];
-
-			if (($file->owner_id == $currentuser->id) || (in_array($currentuser->id, $allowed))) {
-
-				$this->file_open_print($file, $open_type);
-
+			$access = $this->getItemSecurity()->assertCanRead($file, (int) $currentuser->id);
+			if (isset($access->success) && !$access->success) {
+				$this->file_open_error($access->error);
 			} else {
-
-				switch (intval($file->open_link)) {
-
-					case 0:
-						
-						$this->file_open_error(Text::_('COM_COTTON_ERROR_NOACCESS'));
-						break;
-
-					case 1:
-
-						if ($user_id) {
-
-							$this->file_open_print($file, $open_type);
-
-						} else {
-
-							$this->file_open_error(Text::_('COM_COTTON_ERROR_NOACCESS'));
-
-						}
-						
-
-						break;
-
-					case 2:
-
-						$this->file_open_print($file, $open_type);
-						break;
-
-				}
-
+				$this->file_open_print($file, $open_type);
 			}
 		
 		} else {
@@ -1178,12 +1214,10 @@ class CottonModel extends BaseModel {
 
     	$data = new \stdClass();
     	
-		// Check ownership
 		$file = $this->file_select($file_id);
-		if (!$file || (int) $file->owner_id !== $currentuser->id) {
-			$data->success = false;
-			$data->error = Text::_('COM_COTTON_ERROR_NOACCESS');
-			return $data;
+		$access = $this->getItemSecurity()->assertCanEdit($file, (int) $currentuser->id);
+		if (isset($access->success) && !$access->success) {
+			return $access;
 		}
 
 		$limits = $this->limit_file_space();
@@ -1251,12 +1285,10 @@ class CottonModel extends BaseModel {
 
     	$data = new \stdClass();
     	
-		// Check ownership
 		$file = $this->file_select($file_id);
-		if (!$file || (int) $file->owner_id !== $currentuser->id) {
-			$data->success = false;
-			$data->error = Text::_('COM_COTTON_ERROR_NOACCESS');
-			return $data;
+		$access = $this->getItemSecurity()->assertCanEdit($file, (int) $currentuser->id);
+		if (isset($access->success) && !$access->success) {
+			return $access;
 		}
 
 		$validation = $this->validateItemName($file_name);
@@ -1462,9 +1494,9 @@ class CottonModel extends BaseModel {
 
     	$data = new \stdClass();
     	
-		// Check ownership
 		$file = $this->file_select_open($file_id);
-		if (!$file || (int) $file->owner_id !== $currentuser->id) {
+		$access = $this->getItemSecurity()->assertCanRead($file, (int) $currentuser->id);
+		if (isset($access->success) && !$access->success) {
 			$data->success = false;
 			$data->error = Text::_('COM_COTTON_ERROR_NOACCESS');
 			return $data;
@@ -1493,31 +1525,10 @@ class CottonModel extends BaseModel {
 
         }
 
-        $allowed = json_decode($file->allowed_users) ?: [];
-
         $folderPath = '';
         if (!empty($file->folder_id)) {
             $folderRepo = new \Tabaoca\Component\Cotton\Site\Model\Folder\FolderRepository();
             $folderPath = $folderRepo->getFolderPath((int) $file->folder_id, (int) $file->owner_id);
-        }
-
-        $accessGranted = ($file->owner_id == $currentuser->id) || (in_array($currentuser->id, $allowed));
-        if (!$accessGranted) {
-            switch (intval($file->open_link)) {
-                case 0:
-                    $data->success = false;
-                    $data->error = Text::_('COM_COTTON_ERROR_NOACCESS');
-                    return $data;
-                case 1:
-                    if (!$currentuser->id) {
-                        $data->success = false;
-                        $data->error = Text::_('COM_COTTON_ERROR_NOACCESS');
-                        return $data;
-                    }
-                    break;
-                case 2:
-                    break;
-            }
         }
 
         $config = ComponentHelper::getParams('com_cotton');
@@ -1565,12 +1576,15 @@ class CottonModel extends BaseModel {
 
 		$data = new \stdClass();
 
-		// Check ownership
 		$folder = $this->getFolderManager()->load($folder_id);
-		if (!$folder || (int) $folder->owner_id !== $currentuser->id) {
-			$data->success = false;
-			$data->error = Text::_('COM_COTTON_ERROR_NOACCESS');
-			return $data;
+		$access = $this->getItemSecurity()->assertCanDelete($folder, (int) $currentuser->id);
+		if (isset($access->success) && !$access->success) {
+			return $access;
+		}
+
+		$access = $this->getItemSecurity()->assertCanMove($folder, $new_parent_id, (int) $currentuser->id);
+		if (isset($access->success) && !$access->success) {
+			return $access;
 		}
 
 		// Prevent moving a folder into itself or its own children
@@ -1633,12 +1647,10 @@ class CottonModel extends BaseModel {
 
 		$data = new \stdClass();
 
-		// Check ownership
 		$file = $this->file_select($file_id);
-		if (!$file || (int) $file->owner_id !== $currentuser->id) {
-			$data->success = false;
-			$data->error = Text::_('COM_COTTON_ERROR_NOACCESS');
-			return $data;
+		$access = $this->getItemSecurity()->assertCanMove($file, $folder_id, (int) $currentuser->id);
+		if (isset($access->success) && !$access->success) {
+			return $access;
 		}
 
 		$db = $this->getDatabase();

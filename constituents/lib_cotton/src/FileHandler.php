@@ -49,6 +49,45 @@ interface FileHandlerInterface
 }
 
 /**
+ * Security checker interface for file operations.
+ * Allows components to inject their own authorization logic into lib_cotton handlers.
+ *
+ * @since 2.2.0
+ */
+interface FileSecurityInterface
+{
+    /**
+     * Check if a user can read a file.
+     *
+     * @param object $file
+     * @param int    $userId
+     *
+     * @return bool
+     */
+    public function canRead(object $file, int $userId): bool;
+
+    /**
+     * Check if a user can edit/save a file.
+     *
+     * @param object $file
+     * @param int    $userId
+     *
+     * @return bool
+     */
+    public function canEdit(object $file, int $userId): bool;
+
+    /**
+     * Check if a user can create a file inside a folder.
+     *
+     * @param int $folderId
+     * @param int $userId
+     *
+     * @return bool
+     */
+    public function canCreateInFolder(int $folderId, int $userId): bool;
+}
+
+/**
  * Handler for text files (plaintext, code, etc.)
  * 
  * Implements the FileHandlerInterface to provide text file operations:
@@ -82,11 +121,18 @@ class FileHandler implements FileHandlerInterface
     protected array $supportedExtensions = [];
 
     /**
+     * Security checker for authorization
+     * @var FileSecurityInterface|null
+     */
+    protected $security;
+
+    /**
      * Constructor
      * 
-     * @param object|null $fileManager Optional file manager instance
+     * @param object|null              $fileManager Optional file manager instance
+     * @param FileSecurityInterface|null $security   Optional security checker
      */
-    public function __construct($fileManager = null)
+    public function __construct($fileManager = null, $security = null)
     {
         $this->user = Factory::getApplication()->getIdentity();
         
@@ -100,6 +146,8 @@ class FileHandler implements FileHandlerInterface
                 $this->fileManager = null;
             }
         }
+
+        $this->security = $security;
 
         $config = ComponentHelper::getComponent('com_cotton')->getParams();
         $types = $config->get('text_file_types', 'txt,php,html,css,js,json,xml,md');
@@ -207,6 +255,18 @@ class FileHandler implements FileHandlerInterface
                 ];
             }
 
+            // Security check
+            if ($this->security) {
+                $userId = (int) ($this->user->id ?? 0);
+                if (!$this->security->canRead($file, $userId)) {
+                    return [
+                        'success' => false,
+                        'error' => Text::_('COM_COTTON_ERROR_NOACCESS'),
+                        'file_id' => $fileId
+                    ];
+                }
+            }
+
             // Check if file extension is editable
             if (!$this->isEditableExtension($file->name)) {
                 return [
@@ -269,6 +329,18 @@ class FileHandler implements FileHandlerInterface
                     'error' => Text::_('COM_COTTON_FILE_NOT_FOUND'),
                     'file_id' => $fileId
                 ];
+            }
+
+            // Security check
+            if ($this->security) {
+                $userId = (int) ($this->user->id ?? 0);
+                if (!$this->security->canEdit($file, $userId)) {
+                    return [
+                        'success' => false,
+                        'error' => Text::_('COM_COTTON_ERROR_NOACCESS'),
+                        'file_id' => $fileId
+                    ];
+                }
             }
 
             // Check if file extension is editable
@@ -337,6 +409,18 @@ class FileHandler implements FileHandlerInterface
                     'success' => false,
                     'error' => Text::sprintf('COM_COTTON_ERROR_FILE_TYPE_NOT_SUPPORTED', pathinfo($name, PATHINFO_EXTENSION))
                 ];
+            }
+
+            // Security check
+            if ($this->security) {
+                $userId = (int) ($this->user->id ?? 0);
+                if (!$this->security->canCreateInFolder($folderId, $userId)) {
+                    return [
+                        'success' => false,
+                        'error' => Text::_('COM_COTTON_ERROR_NOACCESS'),
+                        'folder_id' => $folderId
+                    ];
+                }
             }
 
             // Create file via manager

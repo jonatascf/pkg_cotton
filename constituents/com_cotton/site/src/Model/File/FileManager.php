@@ -175,16 +175,6 @@ class FileManager
         }
     }
 
-    public function incrementDownloads(int $id): array
-    {
-        try {
-            $ok = $this->repo->incrementDownloads($id);
-            return ['success' => (bool) $ok];
-        } catch (\Exception $e) {
-            return ['success' => false, 'message' => $e->getMessage()];
-        }
-    }
-
     public function getStorageStats(int $ownerId = 0): array
     {
         return $this->repo->getStorageStats($ownerId);

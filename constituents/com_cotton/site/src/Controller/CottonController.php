@@ -15,7 +15,6 @@ use Joomla\CMS\Factory;
 use Joomla\CMS\Language\Text;
 use Joomla\CMS\Session\Session;
 use Joomla\CMS\Response\JsonResponse;
-use Tabaoca\LibCotton\FileHandler;
 use Exception;
 
 /**
@@ -265,8 +264,8 @@ class CottonController extends BaseController {
 			$content = $input->get('content', '', 'RAW');
 			$file_description = $input->get('file_description', '', 'STRING');
 
-			$handler = new FileHandler();
-			$record = $handler->createNew($folder_id, $file_name, $content, $file_description);
+			$model = $this->getModel('Cotton','Site', ['ignore_request' => true]);
+			$record = $model->file_create_text($folder_id, $file_name, $file_description, $content);
 			echo new JsonResponse($record);
 		} catch (Exception $e) {
 			echo new JsonResponse($e);
@@ -421,8 +420,8 @@ class CottonController extends BaseController {
 			$file_id = $input->get('file_id', 0, 'INT');
 			$content = $input->get('content', '', 'RAW');
 
-			$handler = new FileHandler();
-			$result = $handler->saveFile($file_id, $content);
+			$model = $this->getModel('Cotton','Site', ['ignore_request' => true]);
+			$result = $model->file_save_content($file_id, $content);
 			echo new JsonResponse($result);
 		} catch (Exception $e) {
 			echo new JsonResponse($e);
@@ -574,8 +573,8 @@ class CottonController extends BaseController {
 			$content = $input->get('content', '', 'RAW');
 			$description = $input->get('description', '', 'STRING');
 
-			$handler = new FileHandler();
-			$result = $handler->createNew($folder_id, $name, $content, $description);
+			$model = $this->getModel('Cotton','Site', ['ignore_request' => true]);
+			$result = $model->file_create_text($folder_id, $name, $description, $content);
 			echo new JsonResponse($result);
 		} catch (Exception $e) {
 			echo new JsonResponse($e);
