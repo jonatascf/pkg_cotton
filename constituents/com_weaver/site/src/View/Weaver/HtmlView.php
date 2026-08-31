@@ -3,7 +3,7 @@
  * @package Tabaoca.Component.Weaver.Site
  * @subpackage com_weaver
  * @copyright (C) 2026 Jonatas C. Ferreira
- * @license GNU/AGPL v3 https://www.gnu.org/licenses/agpl-3.0.html
+ * @license GNU Affero General Public License version 3 or later; see LICENSE.md
  */
 
 namespace Tabaoca\Component\Weaver\Site\View\Weaver;
@@ -59,7 +59,9 @@ class HtmlView extends BaseHtmlView {
         $wa->useScript('com_weaver.mcp_client');
         $wa->useScript('com_weaver.kilo_assistant');
         $wa->useScript('com_weaver.mcp_panel');
-        
+        $wa->useScript('com_weaver.resource_cache');
+        $wa->useScript('com_weaver.context_manager');
+        $wa->useScript('com_weaver.ui_update_queue');
         
         $wa->getRegistry()->addExtensionRegistryFile('plg_editors_codemirror');
         $wa->useScript('webcomponent.editor-codemirror');

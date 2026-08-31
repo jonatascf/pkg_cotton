@@ -2,7 +2,7 @@
  * @package Tabaoca.Component.Weaver.Site
  * @subpackage com_weaver
  * @copyright (C) 2026 Jonatas C. Ferreira
- * @license GNU/AGPL v3 https://www.gnu.org/licenses/agpl-3.0.html
+ * @license GNU Affero General Public License version 3 or later; see LICENSE.md
  */
 
 /**
@@ -20,8 +20,7 @@ const WeaverKiloAssistant = (() => {
 	let baseUrl = DEFAULT_BASE_URL;
 	let selectedModel = 'kilo-auto/free';
 	let selectedMode = 'code';
-	let conversationHistory = [];
-	let maxHistory = 20;
+	let maxTokens = 12000;
 	let dynamicToolDefinitions = [];
 	let dynamicResources = [];
 	let dynamicPrompts = [];
@@ -40,7 +39,7 @@ const WeaverKiloAssistant = (() => {
 			tools: dynamicToolDefinitions,
 			resources: dynamicResources,
 			prompts: dynamicPrompts,
-			conversation: conversationHistory,
+			conversation: window.ContextManager ? window.ContextManager.getMessages() : [],
 		};
 	}
 
@@ -49,13 +48,11 @@ const WeaverKiloAssistant = (() => {
 	 * @param {string} userInput - User message text
 	 */
 	function pushUserMessage(userInput) {
-		conversationHistory.push({
-			role: 'user',
-			content: userInput,
-		});
-
-		if (conversationHistory.length > maxHistory) {
-			conversationHistory = conversationHistory.slice(-maxHistory);
+		if (window.ContextManager) {
+			window.ContextManager.addMessage({
+				role: 'user',
+				content: userInput,
+			});
 		}
 	}
 
@@ -81,10 +78,8 @@ const WeaverKiloAssistant = (() => {
 			}));
 		}
 
-		conversationHistory.push(entry);
-
-		if (conversationHistory.length > maxHistory) {
-			conversationHistory = conversationHistory.slice(-maxHistory);
+		if (window.ContextManager) {
+			window.ContextManager.addMessage(entry);
 		}
 	}
 
@@ -94,14 +89,12 @@ const WeaverKiloAssistant = (() => {
 	 * @param {string} content - Tool result content
 	 */
 	function pushToolMessage(toolCallId, content) {
-		conversationHistory.push({
-			role: 'tool',
-			tool_call_id: toolCallId,
-			content: content || '',
-		});
-
-		if (conversationHistory.length > maxHistory) {
-			conversationHistory = conversationHistory.slice(-maxHistory);
+		if (window.ContextManager) {
+			window.ContextManager.addMessage({
+				role: 'tool',
+				tool_call_id: toolCallId,
+				content: content || '',
+			});
 		}
 	}
 
@@ -141,19 +134,67 @@ const WeaverKiloAssistant = (() => {
 
 		const streamArgs = buildStreamArgs(userInput);
 
+		const pendingToolCalls = {};
+
+		const wrappedOnToolCall = (event) => {
+			if (event.type === 'tool_call_start' && event.id) {
+				pendingToolCalls[event.id] = {
+					id: event.id,
+					type: 'function',
+					function: { name: event.name || '', arguments: '' },
+				};
+			} else if (event.type === 'tool_call_delta' && event.id) {
+				const call = pendingToolCalls[event.id];
+				if (call) {
+					if (event.name) call.function.name += event.name;
+					if (event.arguments) call.function.arguments += event.arguments;
+				}
+			} else if (event.type === 'tool_call_stop' && event.id) {
+				const call = pendingToolCalls[event.id];
+				if (call && call.function.name) {
+					if (window.ContextManager) {
+						window.ContextManager.addMessage({
+							role: 'assistant',
+							content: null,
+							tool_calls: [call],
+						});
+					}
+				}
+			}
+			if (onToolCall) onToolCall(event);
+		};
+
+		const wrappedOnToolResult = (event) => {
+			if (event.id && pendingToolCalls[event.id]) {
+				const callName = pendingToolCalls[event.id].function.name;
+				if (window.ContextManager) {
+					window.ContextManager.addMessage({
+						role: 'tool',
+						tool_call_id: event.id,
+						content: event.output || event.error?.message || '',
+					});
+				}
+				delete pendingToolCalls[event.id];
+			}
+			if (onToolResult) onToolResult(event);
+		};
+
 		try {
 			const result = await mcpClient.executeAiStream(streamArgs, {
 				onChunk: onMessage,
 				onReasoning: onReasoning,
-				onToolCall: onToolCall,
-				onToolResult: onToolResult,
+				onToolCall: wrappedOnToolCall,
+				onToolResult: wrappedOnToolResult,
 				onError: onError,
 				signal,
 			});
 
-			if (result && result.success && result.output) {
-				pushAssistantMessage(result.output, result.toolCalls || []);
-			} else if (result && !result.success) {
+		if (result && result.success && result.output) {
+			const hasToolCalls = result.toolCalls && result.toolCalls.length > 0;
+			if (!hasToolCalls) {
+				pushAssistantMessage(result.output, []);
+			}
+		} else if (result && !result.success) {
 				if (onError) onError(result.error || Joomla.Text._('COM_WEAVER_ERROR_STREAM_FAILED'));
 			}
 
@@ -265,7 +306,9 @@ const WeaverKiloAssistant = (() => {
 	 * Clears the conversation history.
 	 */
 	function clearHistory() {
-		conversationHistory = [];
+		if (window.ContextManager) {
+			window.ContextManager.clear();
+		}
 	}
 
 	/**
@@ -273,31 +316,74 @@ const WeaverKiloAssistant = (() => {
 	 * @returns {Array} Conversation messages
 	 */
 	function getConversationHistory() {
-		return conversationHistory;
+		if (window.ContextManager) {
+			return window.ContextManager.getMessages();
+		}
+		return [];
 	}
 
 	/**
-	 * Sets the conversation history, trimming to max history length.
+	 * Sets the conversation history, trimming to token limit.
 	 * @param {Array} history - Conversation messages
 	 */
 	function setConversationHistory(history) {
-		conversationHistory = Array.isArray(history) ? history.slice(-maxHistory) : [];
+		if (window.ContextManager) {
+			window.ContextManager.setMessages(Array.isArray(history) ? history : []);
+		}
 	}
 
 	/**
-	 * Gets the maximum conversation history length.
-	 * @returns {number} Max history length
+	 * Gets the maximum token budget for conversation history.
+	 * @returns {number} Max tokens
 	 */
-	function getMaxHistory() {
-		return maxHistory;
+	function getMaxTokens() {
+		if (window.ContextManager) {
+			return window.ContextManager.getMaxTokens();
+		}
+		return maxTokens;
 	}
 
 	/**
-	 * Sets the maximum conversation history length.
-	 * @param {number} value - Max history length (1-100)
+	 * Sets the maximum token budget for conversation history.
+	 * @param {number} value - Max tokens (1000-100000)
 	 */
-	function setMaxHistory(value) {
-		maxHistory = Math.max(1, Math.min(100, value));
+	function setMaxTokens(value) {
+		maxTokens = Math.max(1000, Math.min(100000, value));
+		if (window.ContextManager) {
+			window.ContextManager.setMaxTokens(maxTokens);
+		}
+	}
+
+	/**
+	 * Gets the estimated token usage for the current conversation.
+	 * @returns {number} Estimated tokens
+	 */
+	function getEstimatedTokens() {
+		if (window.ContextManager) {
+			return window.ContextManager.getEstimatedTokens();
+		}
+		return 0;
+	}
+
+	/**
+	 * Gets context utilization statistics.
+	 * @returns {Object} Stats including messageCount, estimatedTokens, maxTokens, utilizationPercent
+	 */
+	function getContextStats() {
+		if (window.ContextManager) {
+			return window.ContextManager.getStats();
+		}
+		return { messageCount: 0, estimatedTokens: 0, maxTokens: maxTokens, utilizationPercent: 0 };
+	}
+
+	/**
+	 * Updates token estimate from API usage data.
+	 * @param {Object} usage - Usage data from API response
+	 */
+	function updateTokenUsage(usage) {
+		if (window.ContextManager && usage) {
+			window.ContextManager.updateFromApiUsage(usage);
+		}
 	}
 
 	/**
@@ -332,8 +418,11 @@ const WeaverKiloAssistant = (() => {
 		clearHistory,
 		getConversationHistory,
 		setConversationHistory,
-		getMaxHistory,
-		setMaxHistory,
+		getMaxTokens,
+		setMaxTokens,
+		getEstimatedTokens,
+		getContextStats,
+		updateTokenUsage,
 		getFreeModels,
 	};
 })();

@@ -3,7 +3,7 @@
  * @package Tabaoca.Library.Cotton
  * @subpackage lib_cotton
  * @copyright (C) 2026 Jonatas C. Ferreira
- * @license GNU/AGPL v3 https://www.gnu.org/licenses/agpl-3.0.html
+ * @license GNU Affero General Public License version 3 or later; see LICENSE.md
  */
 
 namespace Tabaoca\LibCotton;

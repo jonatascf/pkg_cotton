@@ -3,7 +3,7 @@
  * @package Tabaoca.Component.Cotton.Site
  * @subpackage com_cotton
  * @copyright (C) 2024 Jonatas C. Ferreira
- * @license GNU/AGPL v3 https://www.gnu.org/licenses/agpl-3.0.html
+ * @license GNU Affero General Public License version 3 or later; see LICENSE.md
  */
 
 namespace Tabaoca\Component\Cotton\Site\Model;

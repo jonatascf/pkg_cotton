@@ -2,7 +2,7 @@
  * @package Tabaoca.Component.Weaver.Site
  * @subpackage com_weaver
  * @copyright (C) 2026 Jonatas C. Ferreira
- * @license GNU/AGPL v3 https://www.gnu.org/licenses/agpl-3.0.html
+ * @license GNU Affero General Public License version 3 or later; see LICENSE.md
  */
 
 /**
@@ -472,20 +472,25 @@ const WeaverMCPPanel = (() => {
 			}
 		};
 
-		const onToolResult = async (event) => {
+		const onToolResult = (event) => {
 			const success = event.success !== false;
 			const output = event.output || '';
 			const name = event.name || '';
 			const id = event.id || '';
+			const errorType = event.error?.type || event.metadata?.error_type || null;
 
 			let messageId = null;
-			const existing = document.querySelector(`[data-tool-id="${id}"]`);
-			if (existing) {
+			const existing = DOMUtils.safeQuerySelector(`[data-tool-id="${id}"]`);
+			if (existing && DOMUtils.isElementValid(existing)) {
 				existing.classList.remove('weaver-mcp-tool-call--waiting');
 				existing.classList.add(success ? 'weaver-mcp-tool-call--success' : 'weaver-mcp-tool-call--error');
 				const outputEl = existing.querySelector('.weaver-mcp-tool-output');
 				if (outputEl) {
-					outputEl.innerHTML = escapeHtml(output);
+					let displayOutput = output;
+					if (errorType) {
+						displayOutput = `[${errorType}] ${output}`;
+					}
+					outputEl.innerHTML = escapeHtml(displayOutput);
 					outputEl.style.display = 'block';
 				}
 				const spinnerEl = existing.querySelector('.weaver-mcp-tool-spinner');
@@ -495,44 +500,47 @@ const WeaverMCPPanel = (() => {
 
 			if (!messageId) {
 				const statusIcon = success ? '✅' : '❌';
-				messageId = appendMessage('tool-result', `${statusIcon} <strong>[${name}]</strong>\n${escapeHtml(output)}`, !success);
+				const errorPrefix = errorType ? `[${errorType}] ` : '';
+				messageId = appendMessage('tool-result', `${statusIcon} <strong>[${name}]</strong>\n${errorPrefix}${escapeHtml(output)}`, !success);
 			}
 
-		const fileId = event.fileId || event.metadata?.file_id || event.metadata?.fileId || null;
+			const fileId = event.fileId || event.metadata?.file_id || event.metadata?.fileId || null;
 
-		if (success && fileId && window.WeaverEditor?.refreshOpenTab) {
-			const newContent = event.metadata?.content ?? event.content ?? output;
-			window.WeaverEditor.refreshOpenTab(fileId, newContent);
-		}
-
-			if (success && window.WeaverEditor?.refreshTree) {
-				const structuralTools = ['cotton-create', 'cotton-delete', 'mkdir', 'rmdir'];
-				if (structuralTools.includes(name)) {
-					window.WeaverEditor.refreshTree();
-				}
-			}
-
+			const weaverStructuralCommands = ['weaver:create-file', 'weaver:create-folder', 'weaver:set-content', 'weaver-create-file', 'weaver-create-folder'];
 			const frontendCommand = event.metadata?.frontend_command || null;
+			const isStructuralCommand = weaverStructuralCommands.includes(frontendCommand) ||
+				['cotton-create', 'cotton-delete', 'mkdir', 'rmdir'].includes(name);
+
+			if (success && fileId && window.WeaverEditor?.refreshOpenTab) {
+				const newContent = event.metadata?.content ?? event.content ?? output;
+				window.WeaverEditor.refreshOpenTab(fileId, newContent);
+			}
+
+			if (isStructuralCommand && window.WeaverEditor?.refreshTree) {
+				TreeRefreshBatcher.request();
+			}
+
 			if (frontendCommand && window.WeaverMCPPanel?.handleWeaverCommand) {
-				const cmdResult = await window.WeaverMCPPanel.handleWeaverCommand(frontendCommand, event.metadata);
-				if (cmdResult) {
-					const resultText = cmdResult.output || cmdResult.error || '';
-					if (resultText) {
-						if (existing) {
-							const outputEl = existing.querySelector('.weaver-mcp-tool-output');
+				window.UIUpdateQueue.enqueue(async () => {
+					const toolEl = DOMUtils.safeQuerySelector(`[data-tool-id="${id}"]`);
+					if (!toolEl || !DOMUtils.isElementValid(toolEl)) return;
+
+					const cmdResult = await window.WeaverMCPPanel.handleWeaverCommand(frontendCommand, event.metadata);
+					if (cmdResult) {
+						const resultText = cmdResult.output || cmdResult.error || '';
+						if (resultText) {
+							const outputEl = toolEl.querySelector('.weaver-mcp-tool-output');
 							if (outputEl) {
 								outputEl.innerHTML = escapeHtml(resultText);
 								outputEl.style.display = 'block';
 							}
-						} else {
-							appendMessage('tool-result', `${success ? '✅' : '❌'} <strong>[${name}]</strong>\n${escapeHtml(resultText)}`, !success);
 						}
 					}
-				}
-				const weaverStructuralCommands = ['weaver:create-file', 'weaver:create-folder', 'weaver-set-content', 'weaver-create-file', 'weaver-create-folder'];
-				if (weaverStructuralCommands.includes(frontendCommand) && window.WeaverEditor?.refreshTree) {
-					window.WeaverEditor.refreshTree();
-				}
+
+					if (weaverStructuralCommands.includes(frontendCommand) && window.WeaverEditor?.refreshTree) {
+						TreeRefreshBatcher.request();
+					}
+				});
 			}
 
 			lastWasToolResult = true;
@@ -1101,6 +1109,7 @@ const WeaverMCPPanel = (() => {
 
 	/**
 	 * Auto-reads Weaver-specific MCP resources before sending a prompt.
+	 * Uses cache with dirty-state tracking to minimize latency.
 	 * @returns {Promise<void>}
 	 */
 	async function autoReadWeaverResources() {
@@ -1118,8 +1127,17 @@ const WeaverMCPPanel = (() => {
 				return;
 			}
 
+			const dirtyResources = weaverResources.filter((resource) => {
+				const key = window.WeaverResourceCache.extractKey(resource.uri);
+				return window.WeaverResourceCache.isDirty(key);
+			});
+
+			if (dirtyResources.length === 0) {
+				return;
+			}
+
 			const results = await Promise.allSettled(
-				weaverResources.map(async (resource) => {
+				dirtyResources.map(async (resource) => {
 					try {
 						const result = await mcpClient.readResource(resource.uri);
 						return { uri: resource.uri, success: true, data: result };
@@ -1131,8 +1149,6 @@ const WeaverMCPPanel = (() => {
 
 			const successful = results.filter((r) => r.status === 'fulfilled' && r.value.success);
 
-			weaverResourceContents = {};
-
 			for (const r of successful) {
 				const data = r.value.data;
 				const text = data?.text || '';
@@ -1142,11 +1158,24 @@ const WeaverMCPPanel = (() => {
 				} catch {
 					parsed = { raw: text };
 				}
-				const key = r.value.uri.replace('shuttle://weaver/', '');
-				weaverResourceContents[key] = parsed;
+				const key = window.WeaverResourceCache.extractKey(r.value.uri);
+				window.WeaverResourceCache.set(key, parsed);
 			}
+
+			weaverResourceContents = window.WeaverResourceCache.getAll();
 		} catch (error) {
 			console.warn('[WeaverMCP] Auto-read resources failed:', error);
+		}
+	}
+
+	/**
+	 * Marks a Weaver resource as dirty (changed).
+	 * Should be called by Weaver editor when state changes.
+	 * @param {string} resourceKey - Resource key (e.g., 'tabs', 'active-tab')
+	 */
+	function markWeaverResourceDirty(resourceKey) {
+		if (window.WeaverResourceCache) {
+			window.WeaverResourceCache.markDirty(resourceKey);
 		}
 	}
 
@@ -1172,13 +1201,14 @@ const WeaverMCPPanel = (() => {
 		getWeaverOpenTabs,
 		getWeaverActiveTab,
 		getWeaverResourceContents,
+		markWeaverResourceDirty,
 		weaverOpenTab,
 		weaverCreateFile,
 		weaverCreateFolder,
 		weaverSaveActiveTab,
 		weaverRefreshTree,
 		refreshMCPContext,
-		handleWeaverCommand
+		handleWeaverCommand,
 	};
 })();
 

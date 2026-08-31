@@ -7,8 +7,8 @@
 	<authorEmail>jonatas@tabaoca.org</authorEmail>
 	<authorUrl>https://tabaoca.org</authorUrl>
 	<copyright>Copyright (C) 2026 Jonatas C. Ferreira. All rights reserved.</copyright>
-	<license>GNU/AGPL v3 https://www.gnu.org/licenses/agpl-3.0.html</license>
-	<version>2.0.4</version>
+	<license>GNU Affero General Public License version 3 or later; see LICENSE.md</license>
+	<version>2.0.5</version>
 	<description>PLG_EDITORS_XTD_COTTON_DESCRIPTION</description>
 	<element>plg_editors-xtd_cotton</element>
 	<namespace path="src">Tabaoca\Plugin\EditorsXtd\Cotton</namespace>

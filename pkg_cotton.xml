@@ -7,9 +7,9 @@
 	<authorEmail>jonatas@tabaoca.org</authorEmail>
 	<authorUrl>https://tabaoca.org</authorUrl>
 	<copyright>Copyright (C) 2024 Jonatas C. Ferreira. All rights reserved.</copyright>
-	<license>GNU/AGPL v3 https://www.gnu.org/licenses/agpl-3.0.html</license>
+	<license>GNU Affero General Public License version 3 or later; see LICENSE.md</license>
 	<description>Cotton Cloud is a database file storage system extension developed for Joomla!®.</description>
-	<version>2.0.4</version>
+	<version>2.0.5</version>
 	<packagename>cotton</packagename>
 	<url>https://joomla.tabaoca.org</url>
 	<packager>Jonatas C. Ferreira</packager>

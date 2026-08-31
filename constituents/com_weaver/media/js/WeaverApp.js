@@ -2,7 +2,7 @@
  * @package Tabaoca.Component.Weaver.Site
  * @subpackage com_weaver
  * @copyright (C) 2026 Jonatas C. Ferreira
- * @license GNU/AGPL v3 https://www.gnu.org/licenses/agpl-3.0.html
+ * @license GNU Affero General Public License version 3 or later; see LICENSE.md
  */
 
 /**
@@ -44,8 +44,8 @@ const WeaverEditor = (() => {
 		'css': 'css',
 		'scss': 'css',
 		'sass': 'css',
-		'html': 'htmlmixed',
-		'htm': 'htmlmixed',
+		'html': 'xml',
+		'htm': 'xml',
 		'xml': 'xml',
 		'php': 'php',
 		'ini': 'properties',
@@ -53,7 +53,7 @@ const WeaverEditor = (() => {
 		'csv': 'markdown',
 		'ics': 'markdown',
 		'jsonld': 'json',
-		'xul': 'htmlmixed'
+		'xul': 'xml'
 	};
 
 	const modeMap = (() => {

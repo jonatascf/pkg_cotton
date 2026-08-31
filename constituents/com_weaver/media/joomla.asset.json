@@ -82,6 +82,36 @@
       "version": "2.0.0"
     },
     {
+      "name": "com_weaver.resource_cache",
+      "type": "script",
+      "uri": "com_weaver/WeaverResourceCache.js",
+      "attributes": {
+        "type": "module",
+        "defer": true
+      },
+      "version": "2.0.0"
+    },
+    {
+      "name": "com_weaver.context_manager",
+      "type": "script",
+      "uri": "com_weaver/ContextManager.js",
+      "attributes": {
+        "type": "module",
+        "defer": true
+      },
+      "version": "2.0.0"
+    },
+    {
+      "name": "com_weaver.ui_update_queue",
+      "type": "script",
+      "uri": "com_weaver/UIUpdateQueue.js",
+      "attributes": {
+        "type": "module",
+        "defer": true
+      },
+      "version": "2.0.0"
+    },
+    {
       "name": "com_weaver.weaver",
       "type": "style",
       "uri": "com_weaver/weaver.css",

@@ -3,7 +3,7 @@
  * @package Tabaoca.Component.Shuttle.Site
  * @subpackage com_shuttle
  * @copyright (C) 2026 Jonatas C. Ferreira
- * @license GNU/AGPL v3 https://www.gnu.org/licenses/agpl-3.0.html
+ * @license GNU Affero General Public License version 3 or later; see LICENSE.md
  */
 
 namespace Tabaoca\Component\Shuttle\Site\Model\Service;
@@ -11,6 +11,7 @@ namespace Tabaoca\Component\Shuttle\Site\Model\Service;
 defined('_JEXEC') or die;
 
 use InvalidArgumentException;
+use Tabaoca\Component\Shuttle\Site\Model\Service\ToolException;
 
 /**
  * Gerencia o fluxo de streaming de AI com suporte a tool calls.
@@ -93,7 +94,8 @@ class AiStreamHandler
 			$apiKey,
 			$baseUrl,
 			$onSseEvent,
-			$shouldStop
+			$shouldStop,
+			$cwd
 		);
 
 		return $streamResult;
@@ -104,6 +106,8 @@ class AiStreamHandler
 		$messages = [
 			['role' => 'system', 'content' => $systemPrompt],
 		];
+
+		$pendingToolCalls = [];
 
 		foreach ($conversationHistory as $entry) {
 			if (!isset($entry['role'])) {
@@ -118,16 +122,26 @@ class AiStreamHandler
 					'content' => $entry['content'] ?? null,
 					'tool_calls' => $entry['tool_calls'],
 				];
+				foreach ($entry['tool_calls'] as $tc) {
+					$pendingToolCalls[$tc['id']] = true;
+				}
 				continue;
 			}
 
 			if ($role === 'tool' && !empty($entry['tool_call_id'])) {
-				$messages[] = [
-					'role' => 'tool',
-					'tool_call_id' => $entry['tool_call_id'],
-					'content' => $entry['content'] ?? '',
-				];
+				if (isset($pendingToolCalls[$entry['tool_call_id']])) {
+					$messages[] = [
+						'role' => 'tool',
+						'tool_call_id' => $entry['tool_call_id'],
+						'content' => $entry['content'] ?? '',
+					];
+					unset($pendingToolCalls[$entry['tool_call_id']]);
+				}
 				continue;
+			}
+
+			if ($role === 'assistant' && empty($entry['tool_calls'])) {
+				$pendingToolCalls = [];
 			}
 
 			if (!isset($entry['content'])) {
@@ -140,7 +154,7 @@ class AiStreamHandler
 			];
 		}
 
-		$lastEntry = $conversationHistory[count($conversationHistory) - 1] ?? null;
+		$lastEntry = !empty($conversationHistory) ? end($conversationHistory) : null;
 		$isDuplicatePrompt = $lastEntry
 			&& $lastEntry['role'] === 'user'
 			&& isset($lastEntry['content'])
@@ -187,13 +201,16 @@ class AiStreamHandler
 		string $apiKey,
 		string $baseUrl,
 		callable $onSseEvent,
-		?callable $shouldStop
+		?callable $shouldStop,
+		string $cwd = '/'
 	): ?array {
 		$finalOutput = '';
 		$finalToolCalls = [];
 		$finalToolResults = [];
 		$currentMessages = $messages;
 		$allText = '';
+		$maxRetries = 3;
+		$retryableCodes = [429, 502, 503, 504];
 
 		for ($round = 0; $round < $this->maxToolRounds; $round++) {
 		$payload = [
@@ -211,6 +228,32 @@ class AiStreamHandler
 			$roundText = '';
 			$roundToolCalls = [];
 			$finishReason = null;
+			$streamSuccess = false;
+			$lastError = null;
+			$lastHttpCode = null;
+
+			for ($retry = 0; $retry <= $maxRetries; $retry++) {
+				if ($retry > 0) {
+					$backoffMs = pow(2, $retry - 1) * 1000;
+					$this->emit($onSseEvent, 'retry', [
+						'attempt' => $retry,
+						'max_attempts' => $maxRetries,
+						'backoff_ms' => $backoffMs,
+						'http_code' => $lastHttpCode,
+					]);
+					usleep($backoffMs * 1000);
+				}
+
+				if ($shouldStop && $shouldStop()) {
+					$this->emitError($onSseEvent, 'Stream stopped by user');
+					return null;
+				}
+
+		$onText = function (string $delta) use ($onSseEvent, &$roundText, &$allText): void {
+			$roundText .= $delta;
+			$allText .= $delta;
+			$this->emit($onSseEvent, 'message', ['content' => $delta]);
+		};
 
 		$onText = function (string $delta) use ($onSseEvent, &$roundText, &$allText): void {
 			$roundText .= $delta;
@@ -295,11 +338,29 @@ class AiStreamHandler
 			$shouldStop
 		);
 
-		if ($metadata === null || empty($metadata['success'])) {
-			$errorMessage = $metadata['error'] ?? 'Stream interrupted or failed';
+			$lastError = $metadata['error'] ?? null;
+			$lastHttpCode = $metadata['http_code'] ?? null;
+			$streamSuccess = $metadata !== null && !empty($metadata['success']);
 
-			if (!empty($metadata['http_code'])) {
-				$errorMessage .= ' (HTTP ' . $metadata['http_code'] . ')';
+			if ($streamSuccess || $retry >= $maxRetries || !in_array($lastHttpCode, $retryableCodes, true)) {
+				if (!$streamSuccess && ($lastHttpCode === null || !in_array($lastHttpCode, $retryableCodes, true))) {
+					break;
+				}
+				if ($streamSuccess) {
+					$lastError = null;
+					break;
+				}
+			}
+
+			$roundText = '';
+			$roundToolCalls = [];
+			$finishReason = null;
+		}
+
+		if ($lastError !== null) {
+			$errorMessage = $lastError;
+			if ($lastHttpCode !== null) {
+				$errorMessage .= ' (HTTP ' . $lastHttpCode . ')';
 			}
 
 			$this->emitError($onSseEvent, $errorMessage);
@@ -422,7 +483,10 @@ class AiStreamHandler
 					'name' => $name,
 					'success' => false,
 					'output' => 'Empty tool name',
-					'error' => 'Empty tool name',
+					'error' => [
+						'type' => ToolException::VALIDATION,
+						'message' => 'Empty tool name',
+					],
 				];
 				continue;
 			}
@@ -431,13 +495,19 @@ class AiStreamHandler
 				$mcpResult = $this->mcpServer->callTool($name, $args);
 
 				if (isset($mcpResult['error'])) {
+					$errorType = $mcpResult['error']['type'] ?? ToolException::EXECUTION;
+					$errorMessage = $mcpResult['error']['message'] ?? 'Unknown error';
 					$results[] = [
 						'id' => $id,
 						'name' => $name,
 						'arguments' => $args,
 						'success' => false,
-						'output' => $mcpResult['error']['message'] ?? 'Unknown error',
-						'error' => $mcpResult['error']['message'] ?? 'Unknown error',
+						'output' => $errorMessage,
+						'error' => [
+							'type' => $errorType,
+							'message' => $errorMessage,
+							'field' => $mcpResult['error']['field'] ?? null,
+						],
 						'code' => $mcpResult['error']['code'] ?? null,
 					];
 					continue;
@@ -452,23 +522,46 @@ class AiStreamHandler
 					$output = (string) $parsed['output'];
 				}
 
+			$errorData = null;
+			if ($isError && is_array($parsed)) {
+				$errorData = [
+					'type' => isset($parsed['error']['type']) ? $parsed['error']['type'] : ToolException::EXECUTION,
+					'message' => is_array($parsed['error']) ? ($parsed['error']['message'] ?? 'Unknown error') : ($parsed['error'] ?? $parsed['message'] ?? 'Unknown error'),
+				];
+			} elseif ($isError) {
+				$errorData = [
+					'type' => ToolException::EXECUTION,
+					'message' => $content,
+				];
+			}
+
 				$results[] = [
 					'id' => $id,
 					'name' => $name,
 					'arguments' => $args,
 					'success' => !$isError,
 					'output' => $output,
-					'error' => $isError ? ($parsed['error'] ?? null) : null,
+					'error' => $errorData,
 					'metadata' => $mcpResult['result']['metadata'] ?? [],
 				];
-			} catch (\Throwable $e) {
+			} catch (ToolException $e) {
 				$results[] = [
 					'id' => $id,
 					'name' => $name,
 					'arguments' => $args,
 					'success' => false,
 					'output' => $e->getMessage(),
-					'error' => $e->getMessage(),
+					'error' => $e->toArray(),
+				];
+			} catch (\Throwable $e) {
+				$classified = ToolException::classify($e);
+				$results[] = [
+					'id' => $id,
+					'name' => $name,
+					'arguments' => $args,
+					'success' => false,
+					'output' => $e->getMessage(),
+					'error' => $classified->toArray(),
 				];
 			}
 		}

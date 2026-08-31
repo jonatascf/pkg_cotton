@@ -3,7 +3,7 @@
  * @package Tabaoca.Component.Shuttle.Site
  * @subpackage com_shuttle
  * @copyright (C) 2024 Jonatas C. Ferreira
- * @license GNU/AGPL v3 https://www.gnu.org/licenses/agpl-3.0.html
+ * @license GNU Affero General Public License version 3 or later; see LICENSE.md
  */
 
 namespace Tabaoca\Component\Shuttle\Site\Model\Service;
@@ -2804,7 +2804,7 @@ public function execute(string $rawCommand, string $cwd, array $options = [], ar
 	{
 		return [
 			'frontend_command' => 'weaver:tabs',
-			'output' => 'Execute /weaver:tabs in the Weaver MCP panel to list open tabs.',
+			'output' => 'Comando weaver:tabs enviado ao frontend. O resultado real será retornado pelo painel MCP.',
 		];
 	}
 
@@ -2812,7 +2812,7 @@ public function execute(string $rawCommand, string $cwd, array $options = [], ar
 	{
 		return [
 			'frontend_command' => 'weaver:active',
-			'output' => 'Execute /weaver:active in the Weaver MCP panel to show the active tab.',
+			'output' => 'Comando weaver:active enviado ao frontend. O resultado real será retornado pelo painel MCP.',
 		];
 	}
 
@@ -3239,18 +3239,68 @@ public function execute(string $rawCommand, string $cwd, array $options = [], ar
 		];
 	}
 
-	public function buildAiSystemPrompt(string $mode, array $tools, array $resources, array $prompts): string
+	public function buildAiSystemPrompt(string $mode, array $tools, array $resources, array $prompts, bool $compact = true): string
 	{
-		$toolsDesc = $this->buildToolsDescription($tools);
-		$resourcesDesc = $this->buildResourcesDescription($resources);
-		$promptsDesc = $this->buildPromptsDescription($prompts);
-
 		$modeSuffix = match (strtolower($mode)) {
 			'ask' => 'MODO ASK: Responda perguntas de forma clara e didática. Priorize explicações e documentação.',
 			'debug' => 'MODO DEBUG: Analise erros e falhas sistematicamente. Sugira causas, soluções e passos de investigação.',
 			'plan' => 'MODO PLAN: Estruture tarefas em passos organizados. Sugira arquiteturas, divisões e ordens de execução.',
 			default => 'MODO CODE: Foque em gerar e editar código, scripts e implementações técnicas. Seja preciso e objetivo.',
 		};
+
+		if ($compact) {
+			return $this->buildCompactSystemPrompt($modeSuffix, $tools, $resources, $prompts);
+		}
+
+		return $this->buildFullSystemPrompt($modeSuffix, $tools, $resources, $prompts);
+	}
+
+	private function buildCompactSystemPrompt(string $modeSuffix, array $tools, array $resources, array $prompts): string
+	{
+		$toolNames = array_map(fn($t) => $t['name'] ?? 'unknown', $tools);
+		$resourceNames = array_map(fn($r) => $r['name'] ?? 'unknown', $resources);
+		$promptNames = array_map(fn($p) => $p['name'] ?? 'unknown', $prompts);
+
+		$toolsList = empty($toolNames) ? 'Nenhuma ferramenta disponível.' : implode(', ', $toolNames);
+		$resourcesList = empty($resourceNames) ? 'Nenhum recurso disponível.' : implode(', ', $resourceNames);
+		$promptsList = empty($promptNames) ? 'Nenhum prompt disponível.' : implode(', ', $promptNames);
+
+		$base = <<<PROMPT
+Você é um assistente especializado em comandos do terminal Shuttle do Cotton Cloud e no editor Weaver.
+
+Ferramentas MCP disponíveis ({$this->countItems($tools)}): {$toolsList}
+Recursos MCP disponíveis ({$this->countItems($resources)}): {$resourcesList}
+Prompts MCP disponíveis ({$this->countItems($prompts)}): {$promptsList}
+
+Você também tem acesso direto ao editor Weaver para gerar comandos locais (weaver:tabs, weaver:open, weaver:create-file, weaver:create-folder, weaver:save, weaver:edit, weaver:root).
+
+REGRAS IMPORTANTES:
+- Ferramentas e recursos têm definições detalhadas no payload da API. Use-as conforme suas definições.
+- Para ações no editor Weaver, utilize os comandos weaver:* que serão tratados pelo frontend.
+- Ferramentas com frontend_command (como weaver:tabs) executam no frontend. O resultado real vem como um segundo evento tool_result após a resposta inicial. Aguarde e use os dados reais do segundo resultado.
+- NÃO execute ações destrutivas (rmdir, sed -i, mv, cp) sem confirmação explícita do usuário.
+- Responda em português brasileiro.
+- Tipos de erro de ferramentas: validation (corrija parâmetros e tente novamente), permission (informe o usuário), network (tentar novamente com backoff), not_found (verifique o caminho), timeout (tentar novamente).
+
+GUIA DE USO DAS FERRAMENTAS DE NAVEGAÇÃO:
+- ls: LISTAR conteúdo de uma pasta.
+- find: BUSCAR arquivos ou pastas por NOME ou CAMINHO (parâmetro obrigatório: query).
+- grep: BUSCAR CONTEÚDO DENTRO de arquivos.
+- NUNCA use find como substituto de ls.
+
+REGRA DE PARÂMETROS OBRIGATÓRIOS:
+- Ferramentas com parâmetros obrigatórios devem ser chamados com todos os parâmetros requeridos.
+{$modeSuffix}
+PROMPT;
+
+		return trim($base);
+	}
+
+	private function buildFullSystemPrompt(string $modeSuffix, array $tools, array $resources, array $prompts): string
+	{
+		$toolsDesc = $this->buildToolsDescription($tools);
+		$resourcesDesc = $this->buildResourcesDescription($resources);
+		$promptsDesc = $this->buildPromptsDescription($prompts);
 
 		$base = <<<PROMPT
 Você é um assistente especializado em comandos do terminal Shuttle do Cotton Cloud e no editor Weaver.
@@ -3266,7 +3316,7 @@ E aos seguintes prompts MCP:
 
 {$promptsDesc}
 
-Você também tem acesso direto ao editor Weaver para gerenciar abas e arquivos:
+Você também tem acesso direto ao editor Weaver para gerar comandos locais:
 
 Ferramentas locais do Weaver:
 1. /weaver:tabs - Lista todas as abas abertas no editor Weaver.
@@ -3299,6 +3349,11 @@ REGRA DE PARÂMETROS OBRIGATÓRIOS:
 PROMPT;
 
 		return trim($base);
+	}
+
+	private function countItems(array $items): int
+	{
+		return count(array_filter($items, fn($item) => !empty($item)));
 	}
 
 	public function buildToolsDescription(array $tools): string
